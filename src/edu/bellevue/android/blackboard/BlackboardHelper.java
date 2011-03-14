@@ -32,8 +32,11 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 
-public class BlackboardHelper {
+import android.util.Log;
 
+public class BlackboardHelper {
+	private static final String LOGTAG = "BB_HELPER";
+	
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
 	private static HttpClient client = null;
 	private static boolean _loggedIn = false;
@@ -42,6 +45,7 @@ public class BlackboardHelper {
 	
 	public static boolean logIn(String userName, String password)
 	{
+		Log.i(LOGTAG,"Loggin in with User:" + userName + " and Pass:" + password);
 		try{
 
 		httpPost = new HttpPost(LOGIN_URL);
@@ -77,14 +81,17 @@ public class BlackboardHelper {
         
         if (convertStreamToString(httpResponse.getEntity().getContent()).contains("Could not login"))
 		{ 
+        	Log.i(LOGTAG, "Login Failed!");
         	_loggedIn = false;
 		}else
 		{
+			Log.i(LOGTAG, "Login Succeeded!");
 			_loggedIn = true;
 		}
         
 		}catch(Exception e)
 		{
+			Log.i(LOGTAG, "Exception while Logging In");
 			e.printStackTrace();
 			_loggedIn = false;
 		}
