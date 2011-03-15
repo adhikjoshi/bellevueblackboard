@@ -45,7 +45,7 @@ public class BlackboardHelper {
 	
 	public static boolean logIn(String userName, String password)
 	{
-		Log.i(LOGTAG,"Loggin in with User:" + userName + " and Pass:" + password);
+		Log.i(LOGTAG,"Loggin in with User: " + userName + " and Pass: xxxxx");
 		try{
 
 		httpPost = new HttpPost(LOGIN_URL);
