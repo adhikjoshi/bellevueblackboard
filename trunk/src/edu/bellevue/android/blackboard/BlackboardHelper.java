@@ -1,6 +1,8 @@
 package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -86,16 +88,17 @@ public class BlackboardHelper {
         // try to log in
         httpResponse = client.execute(httpPost);
         
-        // check for "Could not login" showing that it failed.
-        
-        if (convertStreamToString(httpResponse.getEntity().getContent()).contains("Could not login"))
+        // check for "redirected" showing that it succeeded.
+
+        if (convertStreamToString(httpResponse.getEntity().getContent()).contains("redirected"))
 		{ 
-        	Log.i(LOGTAG, "Login Failed!");
-        	_loggedIn = false;
+        	Log.i(LOGTAG, "Login Succeeded!");
+			_loggedIn = true;
+        	
 		}else
 		{
-			Log.i(LOGTAG, "Login Succeeded!");
-			_loggedIn = true;
+			Log.i(LOGTAG, "Login Failed!");
+        	_loggedIn = false;
 		}
         
 		}catch(Exception e)
