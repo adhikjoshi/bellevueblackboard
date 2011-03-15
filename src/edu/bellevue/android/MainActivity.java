@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
     	public void onClick(View v) {
     		
     		Thread t = new Thread(new loginThread());
-    		pd = ProgressDialog.show(MainActivity.this, "Please Wait", "Logging In...");
+    		pd = ProgressDialog.show(MainActivity.this, "Please Wait.", "Logging In...");
     		t.start();
     	}
     }
