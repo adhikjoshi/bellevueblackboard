@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
 	
 	private Handler threadHandler = new msgHandler();
 	private static final int THREAD_COMPLETE = 1;
-	private static final int THREAD_ABORT = 2;
+	private static final int CONN_NOT_ALLOWED = 2;
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
@@ -59,8 +59,8 @@ public class MainActivity extends Activity {
     {
     	public void onClick(View v) {
     		
-    		Thread t = new Thread(new loginThread());
     		pd = ProgressDialog.show(MainActivity.this, "Please Wait", "Logging In...");
+    		Thread t = new Thread(new loginThread());
     		t.start();
     	}
     }
@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
     			threadHandler.sendEmptyMessage(THREAD_COMPLETE);
     		}else
     		{
-    			threadHandler.sendEmptyMessage(THREAD_ABORT);
+    			threadHandler.sendEmptyMessage(CONN_NOT_ALLOWED);
     		}
 			
 		}
@@ -100,11 +100,15 @@ public class MainActivity extends Activity {
     			{
     				// Display if successful
     				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_LONG).show();
+    				
+    				// Display Courses
+    				Intent i = new Intent(MainActivity.this,CourseActivity.class);
+    				startActivity(i);
     			}else
     			{
     				Toast.makeText(MainActivity.this, "Login Failed!", Toast.LENGTH_LONG).show();
     			}
-    		}else if (m.what == THREAD_ABORT)
+    		}else if (m.what == CONN_NOT_ALLOWED)
     		{
     			ConnChecker.showUnableToConnect(MainActivity.this);
     		}

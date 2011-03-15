@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URLDecoder;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -31,17 +32,25 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
+import org.htmlparser.Node;
+import org.htmlparser.Parser;
+import org.htmlparser.filters.LinkRegexFilter;
+import org.htmlparser.tags.LinkTag;
+import org.htmlparser.util.NodeList;
 
 import android.util.Log;
 
 public class BlackboardHelper {
 	private static final String LOGTAG = "BB_HELPER";
+	
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
+	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
 	
 	private static HttpClient client = null;
 	private static boolean _loggedIn = false;
 	private static HttpResponse httpResponse = null;
 	private static HttpPost httpPost = null;
+	private static NodeList nodeList;
 	
 	public static boolean logIn(String userName, String password)
 	{
@@ -102,6 +111,37 @@ public class BlackboardHelper {
 		return _loggedIn;
 	}
 
+	public static List<Course> getCourses()
+	{
+		List<Course> courses = new ArrayList<Course>();
+		Parser p;
+		try
+		{
+	        httpPost = new HttpPost(COURSES_URL);
+	        httpResponse = client.execute(httpPost);
+	
+	        p = new Parser();
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+	
+			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" \\/webapps.*"));
+	
+			for (Node n : nodeList.toNodeArray())
+			{
+				Course c = new Course(((LinkTag)n).getLinkText());
+				String courseId = URLDecoder.decode(((LinkTag)n).extractLink());
+				courseId = courseId.substring(courseId.indexOf("e&id=")+5);
+				courseId = courseId.substring(0,courseId.indexOf("&"));
+				c.courseId = courseId;
+				courses.add(c);
+			}
+		}catch(Exception e){e.printStackTrace();}
+		finally
+		{
+			p = null;
+			System.gc();
+		}
+		return courses;
+	}
 // PRIVATE HELPER METHODS
 
 	private static HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
