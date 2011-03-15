@@ -36,8 +36,8 @@ import android.util.Log;
 
 public class BlackboardHelper {
 	private static final String LOGTAG = "BB_HELPER";
-	
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
+	
 	private static HttpClient client = null;
 	private static boolean _loggedIn = false;
 	private static HttpResponse httpResponse = null;

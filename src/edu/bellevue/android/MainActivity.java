@@ -1,14 +1,21 @@
 package edu.bellevue.android;
 
-import edu.bellevue.android.blackboard.BlackboardHelper;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
+import edu.bellevue.android.blackboard.BlackboardHelper;
 
 public class MainActivity extends Activity {
+	
+	private Handler threadHandler = new msgHandler();
+	private static final int THREAD_COMPLETE = 1;
+	private ProgressDialog pd;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -21,20 +28,45 @@ public class MainActivity extends Activity {
     private class submitListener implements OnClickListener
     {
     	public void onClick(View v) {
-    		// get references to the Edit Boxes
+    		
+    		Thread t = new Thread(new loginThread());
+    		pd = ProgressDialog.show(MainActivity.this, "Please Wait", "Logging In...");
+    		t.start();
+    	}
+    }
+    private class loginThread implements Runnable
+    {
+
+		public void run() {
+			//get references to the Edit Boxes
     		EditText userName = ((EditText)findViewById(R.id.txtUserName));
     		EditText password = ((EditText)findViewById(R.id.txtPassword));
     		
-    		// Attempt to log in
-    		BlackboardHelper.logIn(userName.getText().toString(), password.getText().toString());
+    		// Trim the username
+    		String user = userName.getText().toString().trim();
+    		String pass = password.getText().toString();
     		
-    		if (BlackboardHelper.isLoggedIn())
+    		// Attempt to log in
+    		BlackboardHelper.logIn(user, pass);
+			threadHandler.sendEmptyMessage(THREAD_COMPLETE);
+		}
+    	
+    }
+    private class msgHandler extends Handler
+    {
+    	public void handleMessage(Message m)
+    	{
+    		if (m.what == THREAD_COMPLETE)
     		{
-    			// Display if successful
-    			Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_LONG).show();
-    		}else
-    		{
-    			Toast.makeText(MainActivity.this, "Login Failed!", Toast.LENGTH_LONG).show();
+    			pd.dismiss();
+    			if (BlackboardHelper.isLoggedIn())
+    			{
+    				// Display if successful
+    				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_LONG).show();
+    			}else
+    			{
+    				Toast.makeText(MainActivity.this, "Login Failed!", Toast.LENGTH_LONG).show();
+    			}
     		}
     	}
     }
