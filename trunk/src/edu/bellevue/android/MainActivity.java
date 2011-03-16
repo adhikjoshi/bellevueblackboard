@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
 	private Handler threadHandler = new msgHandler();
 	private static final int THREAD_COMPLETE = 1;
 	private static final int CONN_NOT_ALLOWED = 2;
+	private static final int CONN_NOT_POSSIBLE = 3;
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
@@ -83,7 +84,13 @@ public class MainActivity extends Activity {
     			threadHandler.sendEmptyMessage(THREAD_COMPLETE);
     		}else
     		{
-    			threadHandler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
+    			{
+    				threadHandler.sendEmptyMessage(CONN_NOT_POSSIBLE);
+    			}else
+    			{
+    				threadHandler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    			}
     		}
 			
 		}
@@ -94,8 +101,9 @@ public class MainActivity extends Activity {
     	public void handleMessage(Message m)
     	{
     		pd.dismiss();
-    		if (m.what == THREAD_COMPLETE)
+    		switch (m.what)
     		{
+    		case THREAD_COMPLETE:
     			if (BlackboardHelper.isLoggedIn())
     			{
     				// Display if successful
@@ -108,16 +116,12 @@ public class MainActivity extends Activity {
     			{
     				Toast.makeText(MainActivity.this, "Login Failed!", Toast.LENGTH_LONG).show();
     			}
-    		}else if (m.what == CONN_NOT_ALLOWED)
-    		{
-    			if (ConnChecker.getConnType(MainActivity.this).equals("NoNetwork"))
-    			{
-    				Toast.makeText(MainActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
-    			}else
-    			{
-    				ConnChecker.showUnableToConnect(MainActivity.this);	
-    			}
-    			
+    			break;
+    		case CONN_NOT_ALLOWED:
+    			ConnChecker.showUnableToConnect(MainActivity.this);
+    			break;
+    		case CONN_NOT_POSSIBLE:
+    			Toast.makeText(MainActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
     		}
     	}
     }
