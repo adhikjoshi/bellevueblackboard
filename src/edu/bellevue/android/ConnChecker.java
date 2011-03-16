@@ -12,7 +12,14 @@ public final class ConnChecker {
 		public static boolean shouldConnect(SharedPreferences prefs, Context ctx)
 	    {
 	    	ConnectivityManager connMan = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-	    	int netType = connMan.getActiveNetworkInfo().getType();
+	    	int netType;
+	    	try
+	    	{
+	    		netType = connMan.getActiveNetworkInfo().getType();
+	    	}catch (Exception e)
+	    	{
+	    		return false;
+	    	}
 	    	
 	    	if (netType == ConnectivityManager.TYPE_WIFI) 
 	    	{
@@ -43,7 +50,15 @@ public final class ConnChecker {
 		public static String getConnType(Context ctx) {
 			// TODO Auto-generated method stub
 			ConnectivityManager connMan = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-			switch (connMan.getActiveNetworkInfo().getType())
+			int netType;
+			try
+			{
+				netType = connMan.getActiveNetworkInfo().getType();
+			}catch (Exception e)
+			{
+				return "NoNetwork";
+			}
+			switch (netType)
 			{
 			case ConnectivityManager.TYPE_WIFI:
 				return "Wireless";

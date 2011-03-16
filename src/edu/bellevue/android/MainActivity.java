@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
     			if (BlackboardHelper.isLoggedIn())
     			{
     				// Display if successful
-    				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_LONG).show();
+    				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_SHORT).show();
     				
     				// Display Courses
     				Intent i = new Intent(MainActivity.this,CourseActivity.class);
@@ -110,7 +110,14 @@ public class MainActivity extends Activity {
     			}
     		}else if (m.what == CONN_NOT_ALLOWED)
     		{
-    			ConnChecker.showUnableToConnect(MainActivity.this);
+    			if (ConnChecker.getConnType(MainActivity.this).equals("NoNetwork"))
+    			{
+    				Toast.makeText(MainActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
+    			}else
+    			{
+    				ConnChecker.showUnableToConnect(MainActivity.this);	
+    			}
+    			
     		}
     	}
     }
