@@ -35,6 +35,19 @@ public class MainActivity extends Activity {
         ctx = getApplicationContext();
         prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
         
+        // AutoLogin stuff
+        if (prefs.getBoolean("autologin", false))
+        {
+        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
+    		EditText password = ((EditText)findViewById(R.id.txtPassword));
+    		userName.setText(prefs.getString("username", ""));
+    		password.setText(prefs.getString("password", ""));
+    		
+    		// call the submit button's click handler :)
+    		new submitListener().onClick(null);
+    		
+        }
+        
     }
     
 

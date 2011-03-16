@@ -5,11 +5,14 @@ import java.util.List;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import edu.bellevue.android.blackboard.BlackboardHelper;
 import edu.bellevue.android.blackboard.Course;
@@ -39,6 +42,21 @@ public class CourseActivity extends ListActivity {
 	    
 	}
 	
+    public boolean onCreateOptionsMenu(Menu m)
+    {
+    	m.add("Settings");
+    	return super.onCreateOptionsMenu(m);
+    }
+    
+    public boolean onOptionsItemSelected(MenuItem mi)
+    {
+    	if (mi.getTitle().equals("Settings"))
+    	{
+    		Intent i = new Intent(this,PrefActivity.class);
+    		startActivity(i);
+    	}
+    	return true;
+    }
 	
 	private class threadHandler extends Handler
 	{

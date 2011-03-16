@@ -23,7 +23,7 @@ public class PrefActivity extends PreferenceActivity implements OnSharedPreferen
 		if (arg1.equals("autologin"))
 		{
 			Toast.makeText(getApplicationContext(), "Autologin Changed", Toast.LENGTH_LONG).show();
-			if (arg0.getBoolean("autologin", false))
+			if (!arg0.getBoolean("autologin", false))
 			{
 				Editor e = arg0.edit();
 				e.putString("username", "");
