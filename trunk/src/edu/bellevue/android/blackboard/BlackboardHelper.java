@@ -35,7 +35,11 @@ import org.apache.http.protocol.HTTP;
 import org.htmlparser.Node;
 import org.htmlparser.Parser;
 import org.htmlparser.filters.LinkRegexFilter;
+import org.htmlparser.filters.TagNameFilter;
+import org.htmlparser.tags.CompositeTag;
 import org.htmlparser.tags.LinkTag;
+import org.htmlparser.tags.TableColumn;
+import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
 import android.util.Log;
@@ -43,14 +47,24 @@ import android.util.Log;
 public class BlackboardHelper {
 	private static final String LOGTAG = "BB_HELPER";
 	
+	// URLS USED FOR PARSING
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
 	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
+	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
 	
 	private static HttpClient client = null;
 	private static boolean _loggedIn = false;
 	private static HttpResponse httpResponse = null;
 	private static HttpPost httpPost = null;
 	private static NodeList nodeList;
+	private static Parser p;
+	
+	// FILTERS USED FOR PARSING
+	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
+	private static TagNameFilter anchorTagFilter = new TagNameFilter("a");
+	private static TagNameFilter spanTagFilter = new TagNameFilter("span");
+	
+	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	
 	public static boolean logIn(String userName, String password)
 	{
@@ -111,11 +125,9 @@ public class BlackboardHelper {
 	{
 		return _loggedIn;
 	}
-
 	public static List<Course> getCourses()
 	{
 		List<Course> courses = new ArrayList<Course>();
-		Parser p;
 		try
 		{
 	        httpPost = new HttpPost(COURSES_URL);
@@ -143,7 +155,90 @@ public class BlackboardHelper {
 		}
 		return courses;
 	}
-// PRIVATE HELPER METHODS
+	public static List<Forum> getForums(String courseId)
+	{
+		List<Forum> forums = new ArrayList<Forum>();
+		try
+		{
+			//TODO: Check and see if we logged in
+			
+	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,courseId));
+	        httpResponse = client.execute(httpPost);	
+	        
+	        p = new Parser();
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+	
+			nodeList = p.extractAllNodesThatMatch(tableTagFilter);
+			TableTag forumTable = null;
+			for (Node n : nodeList.toNodeArray())
+			{
+				if (((TableTag)n).getAttribute("summary") != null)
+				{
+					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
+					{
+						forumTable = (TableTag)n;
+						break;
+					}
+				}
+			}
+			
+			org.htmlparser.tags.TableRow[] rows = forumTable.getRows();
+			
+			for (int x = 1; x < rows.length; x++)
+			{
+				String forumName;
+				String pCount;
+				String uCount;
+				
+				TableColumn[] cols = rows[x].getColumns();
+				
+				//Get Forum Name
+				nodeList = cols[0].getChildren();
+				CompositeTag myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				forumName = myTag.getStringText().trim();
+				
+				//Get Post Count
+				nodeList = cols[1].getChildren();
+				try{
+					myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[1]);
+				}catch(Exception e){
+					myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
+				}
+				pCount = myTag.getStringText().trim();
+				
+				//Get Unread Count
+				nodeList = cols[2].getChildren();
+				try
+				{
+					myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+					uCount = myTag.getStringText().trim();
+				}catch (Exception e){uCount = "0";}
+				
+				
+				//Get Conf ID and Forum ID
+				nodeList = cols[0].getChildren();
+				myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
+				
+				//conf_id= //forum_id=
+				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
+				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
+				
+				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
+				//forum_id = forum_id.substring(0,forum_id.indexOf("&"));
+				
+				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
+				course_id = course_id.substring(0,course_id.indexOf("&"));
+				
+				Forum f = new Forum(forumName,pCount,uCount,course_id,conf_id,forum_id);
+				forums.add(f);
+			}			
+		}catch(Exception e){e.printStackTrace();}
+		
+		return forums;
+		
+	}
+	// PRIVATE HELPER METHODS
 
 	private static HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
     {
