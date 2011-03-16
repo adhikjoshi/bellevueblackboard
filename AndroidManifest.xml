@@ -18,7 +18,8 @@
         </activity>
         <activity android:name=".CourseActivity"></activity>
         <activity android:name=".PrefActivity"></activity>
-        <activity android:name="CourseActivity"></activity>
+        <activity android:name=".CourseActivity"></activity>
+        <activity android:name=".ForumActivity"></activity>
 
     </application>
 </manifest>

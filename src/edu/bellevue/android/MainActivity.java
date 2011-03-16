@@ -19,7 +19,7 @@ import edu.bellevue.android.blackboard.BlackboardHelper;
 
 public class MainActivity extends Activity {
 	
-	private Handler threadHandler = new msgHandler();
+	private Handler handler = new msgHandler();
 	private static final int THREAD_COMPLETE = 1;
 	private static final int CONN_NOT_ALLOWED = 2;
 	private static final int CONN_NOT_POSSIBLE = 3;
@@ -94,15 +94,15 @@ public class MainActivity extends Activity {
     		if (ConnChecker.shouldConnect(prefs, ctx))
     		{
     			BlackboardHelper.logIn(user, pass);
-    			threadHandler.sendEmptyMessage(THREAD_COMPLETE);
+    			handler.sendEmptyMessage(THREAD_COMPLETE);
     		}else
     		{
     			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
     			{
-    				threadHandler.sendEmptyMessage(CONN_NOT_POSSIBLE);
+    				handler.sendEmptyMessage(CONN_NOT_POSSIBLE);
     			}else
     			{
-    				threadHandler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    				handler.sendEmptyMessage(CONN_NOT_ALLOWED);
     			}
     		}
 			
@@ -121,7 +121,6 @@ public class MainActivity extends Activity {
     			{
     				// Display if successful
     				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_SHORT).show();
-    				
     				// Display Courses
     				Intent i = new Intent(MainActivity.this,CourseActivity.class);
     				startActivity(i);

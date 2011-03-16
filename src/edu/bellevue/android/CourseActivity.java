@@ -13,7 +13,10 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardHelper;
 import edu.bellevue.android.blackboard.Course;
 
@@ -21,6 +24,7 @@ public class CourseActivity extends ListActivity {
 
 	private static final int THREAD_COMPLETE = 1;
 	private static final int CONN_NOT_ALLOWED = 2;
+	private static final int CONN_NOT_POSSIBLE = 3;
 	private List<Course> courses;
 	private SharedPreferences prefs;
 	private Context ctx;
@@ -42,6 +46,29 @@ public class CourseActivity extends ListActivity {
 	    
 	}
 	
+	public void onListItemClick(ListView l, View v, int position, long id)
+	{
+    	super.onListItemClick(l, v, position, id);
+    	if (ConnChecker.shouldConnect(prefs, ctx))
+		{
+        	Course c = (Course)l.getItemAtPosition(position);
+        	Intent i = new Intent(this,ForumActivity.class);
+        	i.putExtra("name", c.friendlyName);
+        	i.putExtra("course_id", c.courseId);
+        	startActivity(i);
+		}else
+		{
+			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
+			{
+				Toast.makeText(CourseActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
+			}else
+			{
+				ConnChecker.showUnableToConnect(CourseActivity.this);
+			}
+		}
+
+	}
+	
     public boolean onCreateOptionsMenu(Menu m)
     {
     	m.add("Settings");
@@ -58,21 +85,27 @@ public class CourseActivity extends ListActivity {
     	return true;
     }
 	
-	private class threadHandler extends Handler
+	protected class threadHandler extends Handler
 	{
 		public void handleMessage(Message m)
 		{
+			pd.dismiss();
 			switch(m.what)
 			{
 			case THREAD_COMPLETE:
-				pd.dismiss();
 				setListAdapter(new ArrayAdapter<Course>(ctx, android.R.layout.simple_list_item_1,courses));
-			case CONN_NOT_ALLOWED:
-			}
+				break;
+    		case CONN_NOT_ALLOWED:
+    			ConnChecker.showUnableToConnect(CourseActivity.this);
+    			finish();
+    			break;
+    		case CONN_NOT_POSSIBLE:
+    			Toast.makeText(CourseActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
+    			finish();
+    		}
 		}
-	}
-	
-	private class getCoursesThread implements Runnable
+	}	
+	protected class getCoursesThread implements Runnable
 	{
 
 		public void run() {
@@ -82,8 +115,13 @@ public class CourseActivity extends ListActivity {
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
-				ConnChecker.showUnableToConnect(CourseActivity.this);
-				handler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
+    			{
+    				handler.sendEmptyMessage(CONN_NOT_POSSIBLE);
+    			}else
+    			{
+    				handler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    			}
 			}
 			
 		}
