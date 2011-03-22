@@ -134,7 +134,6 @@ public class BlackboardHelper {
 	        Log.i(LOGTAG,"Courses URL: " + COURSES_URL);
 	        httpResponse = client.execute(httpPost);
 	
-	        //p = new Parser();
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
 	
 			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" \\/webapps.*"));
@@ -153,7 +152,6 @@ public class BlackboardHelper {
 		}catch(Exception e){e.printStackTrace(); courses = null;}
 		finally
 		{
-			//p = null;
 			System.gc();
 		}
 		return courses;
@@ -163,12 +161,10 @@ public class BlackboardHelper {
 		List<Forum> forums = new ArrayList<Forum>();
 		try
 		{
-			//TODO: Check and see if we logged in
 			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,courseId));
 	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,courseId));
 	        httpResponse = client.execute(httpPost);	
 	        
-	        //p = new Parser();
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
 	
 			nodeList = p.extractAllNodesThatMatch(tableTagFilter);
@@ -223,12 +219,10 @@ public class BlackboardHelper {
 				myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
 				
-				//conf_id= //forum_id=
 				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
 				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
 				
 				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
-				//forum_id = forum_id.substring(0,forum_id.indexOf("&"));
 				
 				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
 				course_id = course_id.substring(0,course_id.indexOf("&"));
