@@ -28,8 +28,9 @@ public class MainActivity extends Activity {
 	private SharedPreferences prefs;
     /** Called when the activity is first created. */
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.main);
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
