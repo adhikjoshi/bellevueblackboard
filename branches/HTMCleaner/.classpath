@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="externalLibs/sitecapturer.jar"/>
 	<classpathentry kind="lib" path="externalLibs/thumbelina.jar"/>
 	<classpathentry kind="lib" path="externalLibs/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/Users/TJ/Downloads/htmlcleaner-2.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

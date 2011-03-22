@@ -32,6 +32,8 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
 import org.htmlparser.Node;
 import org.htmlparser.Parser;
 import org.htmlparser.filters.LinkRegexFilter;
@@ -59,6 +61,8 @@ public class BlackboardHelper {
 	private static NodeList nodeList;
 	private static Parser p = new Parser();
 	
+	private static final HtmlCleaner cleaner = new HtmlCleaner();
+	
 	// FILTERS USED FOR PARSING
 	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
 	private static TagNameFilter anchorTagFilter = new TagNameFilter("a");
@@ -79,7 +83,7 @@ public class BlackboardHelper {
 		}
 
 		client = createHttpClient();
-
+		
 		// by parsing out the HTML page and looking at the code
 		// we know that the password is base64 encoded twice (once ansii once unicode)
 		// and that the password field itself is nulled out.
@@ -130,25 +134,34 @@ public class BlackboardHelper {
 		List<Course> courses = new ArrayList<Course>();
 		try
 		{
+			
 	        httpPost = new HttpPost(COURSES_URL);
 	        Log.i(LOGTAG,"Courses URL: " + COURSES_URL);
 	        httpResponse = client.execute(httpPost);
-	
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-	
-			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" \\/webapps.*"));
-	
-			for (Node n : nodeList.toNodeArray())
-			{
-				Course c = new Course(((LinkTag)n).getLinkText());
-				
-				String courseId = URLDecoder.decode(((LinkTag)n).extractLink());
-				courseId = courseId.substring(courseId.indexOf("e&id=")+5);
-				courseId = courseId.substring(0,courseId.indexOf("&"));
-				c.courseId = courseId;
-				Log.i(LOGTAG , "Found Course With ID: " + c.courseId);
-				courses.add(c);
-			}
+	        
+	        TagNode node = cleaner.clean(httpResponse.getEntity().getContent());
+	        Object[] obs = node.evaluateXPath("//a");
+	        
+	        for (Object o: obs)
+	        {
+	        	if (o instanceof TagNode)
+	        	{
+	        		TagNode n = (TagNode)o;
+	        		String name = n.getText().toString();
+	        		
+	        		String href = n.getAttributeByName("href");
+	        		if (href != null && href.startsWith(" /webapps/portal"))
+	        		{
+	        			String courseId = URLDecoder.decode(n.getAttributeByName("href"));
+	        			Course c = new Course(name);
+	        			courseId = courseId.substring(courseId.indexOf("e&id=")+5);
+	    				courseId = courseId.substring(0,courseId.indexOf("&"));
+	    				c.courseId = courseId;
+	    				Log.i(LOGTAG , "Found Course With ID: " + c.courseId);
+	    				courses.add(c);
+	        		}
+	        	}
+	        }
 		}catch(Exception e){e.printStackTrace(); courses = null;}
 		finally
 		{
