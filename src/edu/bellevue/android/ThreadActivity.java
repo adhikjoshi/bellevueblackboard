@@ -17,21 +17,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardHelper;
-import edu.bellevue.android.blackboard.Course;
 import edu.bellevue.android.blackboard.Forum;
 
-public class ForumActivity extends ListActivity {
+public class ThreadActivity extends ListActivity {
 
 	private static final int THREAD_COMPLETE = 1;
 	private static final int CONN_NOT_ALLOWED = 2;
 	private static final int CONN_NOT_POSSIBLE = 3;
 	
-	private List<Forum> forums;
+	private List<edu.bellevue.android.blackboard.Thread> threads;
 	private String courseId;
+	private String forumId;
+	private String confId;
 	private String friendlyName;
 	private SharedPreferences prefs;
 	private Context ctx;
@@ -48,40 +48,19 @@ public class ForumActivity extends ListActivity {
 	    
 	    Bundle extras = getIntent().getExtras();
 	    courseId = extras.getString("course_id");
+	    confId = extras.getString("conf_id");
+	    forumId = extras.getString("forum_id");
 	    friendlyName = extras.getString("name");
 	    
-	    setTitle(friendlyName + " - Forums");
+	    setTitle(friendlyName + " - Threads");
 	    
-	    pd = ProgressDialog.show(this, "Please Wait", "Loading Forums...");
+	    pd = ProgressDialog.show(this, "Please Wait", "Loading Threads...");
 	    
-	    Thread t = new Thread(new getForumsThread());
+	    Thread t = new Thread(new getThreadsThread());
 	    t.start();
 	    
 	}
-	public void onListItemClick(ListView l, View v, int position, long id)
-	{
-    	super.onListItemClick(l, v, position, id);
-    	if (ConnChecker.shouldConnect(prefs, ctx))
-		{
-        	Forum c = (Forum)l.getItemAtPosition(position);
-        	Intent i = new Intent(this,ThreadActivity.class);
-        	i.putExtra("name", c.forumName);
-        	i.putExtra("course_id", c.course_id);
-        	i.putExtra("conf_id", c.conf_id);
-        	i.putExtra("forum_id", c.forum_id);
-        	startActivity(i);
-		}else
-		{
-			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
-			{
-				Toast.makeText(ForumActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
-			}else
-			{
-				ConnChecker.showUnableToConnect(ForumActivity.this);
-			}
-		}
-
-	}
+	
     public boolean onCreateOptionsMenu(Menu m)
     {
     	m.add("Settings");
@@ -106,26 +85,26 @@ public class ForumActivity extends ListActivity {
 			switch(m.what)
 			{
 			case THREAD_COMPLETE:
-				setListAdapter(new ForumAdapter(ctx, android.R.layout.simple_list_item_1,forums));
+				setListAdapter(new ThreadAdapter(ctx, android.R.layout.simple_list_item_1,threads));
 				break;
 			case CONN_NOT_ALLOWED:
-    			ConnChecker.showUnableToConnect(ForumActivity.this);
+    			ConnChecker.showUnableToConnect(ThreadActivity.this);
     			finish();
     			break;
     		case CONN_NOT_POSSIBLE:
-    			Toast.makeText(ForumActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
+    			Toast.makeText(ThreadActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
     			finish();
     		}
 		}
 	}
 	
-	protected class getForumsThread implements Runnable
+	protected class getThreadsThread implements Runnable
 	{
 
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				forums = BlackboardHelper.getForums(courseId);
+				threads = BlackboardHelper.getThreads(forumId,confId,courseId);
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
@@ -139,11 +118,11 @@ public class ForumActivity extends ListActivity {
 			}
 		}
 	}
-    private class ForumAdapter extends ArrayAdapter<Forum> {
+    private class ThreadAdapter extends ArrayAdapter<edu.bellevue.android.blackboard.Thread> {
 
-        private List<Forum> items;
+        private List<edu.bellevue.android.blackboard.Thread> items;
 
-        public ForumAdapter(Context context, int textViewResourceId, List<Forum> items) {
+        public ThreadAdapter(Context context, int textViewResourceId, List<edu.bellevue.android.blackboard.Thread> items) {
                 super(context, textViewResourceId, items);
                 this.items = items;
         }
@@ -153,19 +132,25 @@ public class ForumActivity extends ListActivity {
                 View v = convertView;
                 if (v == null) {
                     LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    v = vi.inflate(R.layout.forumrow, null);
+                    v = vi.inflate(R.layout.threadrow, null);
                 }
-                Forum o = items.get(position);
+                edu.bellevue.android.blackboard.Thread o = items.get(position);
                 if (o != null) {
-                        TextView tt = (TextView) v.findViewById(R.id.toptext);
-                        TextView bt = (TextView) v.findViewById(R.id.bottomtext);
-                        if (tt != null) {
-                              tt.setText(o.forumName);                            }
-                        if(bt != null){
-                              bt.setText("Total Posts: "+ o.pCount + " Unread: " + o.uCount);
-                        }
-                }
-                return v;
+                    TextView tt = (TextView) v.findViewById(R.id.toptext);
+                    
+                    TextView mt = (TextView) v.findViewById(R.id.middletext);
+                    TextView bt = (TextView) v.findViewById(R.id.bottomtext);
+                    if (tt != null) {
+                          tt.setText(o.threadName); 
+                    }
+                    if (mt != null) {
+                    	mt.setText("By: " + o.threadAuthor + " On: "+o.threadDate);
+                    }
+                    if(bt != null){
+                          bt.setText("Total Posts: "+ o.pCount + " Unread: " + o.uCount);
+                    }
+            }
+            return v;
         }
     }  
 }

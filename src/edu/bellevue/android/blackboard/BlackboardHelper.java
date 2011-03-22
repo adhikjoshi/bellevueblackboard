@@ -51,7 +51,7 @@ public class BlackboardHelper {
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
 	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
 	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
-	
+	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
 	private static HttpClient client = null;
 	private static boolean _loggedIn = false;
 	private static HttpResponse httpResponse = null;
@@ -131,6 +131,7 @@ public class BlackboardHelper {
 		try
 		{
 	        httpPost = new HttpPost(COURSES_URL);
+	        Log.i(LOGTAG,"Courses URL: " + COURSES_URL);
 	        httpResponse = client.execute(httpPost);
 	
 	        p = new Parser();
@@ -141,13 +142,15 @@ public class BlackboardHelper {
 			for (Node n : nodeList.toNodeArray())
 			{
 				Course c = new Course(((LinkTag)n).getLinkText());
+				
 				String courseId = URLDecoder.decode(((LinkTag)n).extractLink());
 				courseId = courseId.substring(courseId.indexOf("e&id=")+5);
 				courseId = courseId.substring(0,courseId.indexOf("&"));
 				c.courseId = courseId;
+				Log.i(LOGTAG , "Found Course With ID: " + c.courseId);
 				courses.add(c);
 			}
-		}catch(Exception e){e.printStackTrace();}
+		}catch(Exception e){e.printStackTrace(); courses = null;}
 		finally
 		{
 			p = null;
@@ -161,7 +164,7 @@ public class BlackboardHelper {
 		try
 		{
 			//TODO: Check and see if we logged in
-			
+			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,courseId));
 	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,courseId));
 	        httpResponse = client.execute(httpPost);	
 	        
@@ -233,7 +236,7 @@ public class BlackboardHelper {
 				Forum f = new Forum(forumName,pCount,uCount,course_id,conf_id,forum_id);
 				forums.add(f);
 			}			
-		}catch(Exception e){e.printStackTrace();}
+		}catch(Exception e){e.printStackTrace(); forums = null;}
 		
 		return forums;
 		
@@ -289,5 +292,121 @@ public class BlackboardHelper {
 		    return "";
 		}
     }
+	
+	public static List<Thread> getThreads(String formid, String confid, String courseid)
+	{
+		List<Thread> threads = new ArrayList<Thread>();
+		try
+		{			
+			Log.i("THREADS", String.format(THREADS_URL,formid,confid,courseid));
+	        httpPost = new HttpPost(String.format(THREADS_URL,formid,confid,courseid));
+	        httpResponse = client.execute(httpPost);	
+	        
+	        p = new Parser();
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+			
+	        nodeList = p.extractAllNodesThatMatch(tableTagFilter);
+	        
+			TableTag forumTable = null;
+			for (Node n : nodeList.toNodeArray())
+			{
+				if (((TableTag)n).getAttribute("summary") != null)
+				{
+					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
+					{
+						forumTable = (TableTag)n;
+						break;
+					}
+				}
+			}	        
+			org.htmlparser.tags.TableRow[] rows = forumTable.getRows();
+	        for (int x = 2; x < rows.length; x++)
+			{
+	        	String threadDate;
+				String threadName;
+				String threadAuthor;
+				String pCount;
+				String uCount;
+				
+				TableColumn[] cols = rows[x].getColumns();
+
+				//Get Unread Count
+				NodeList lst = cols[6 + (cols.length - 8)].getChildren();
+				CompositeTag myTag;
+				try
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+					uCount = myTag.getStringText().trim();
+				}catch (Exception e){
+					e.printStackTrace();
+					uCount = "0";
+					
+				}
+				
+				
+				//Get Thread Name
+				lst = cols[3].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				threadName = myTag.getStringText().trim();
+				
+				//Get Thread Date
+				lst = cols[2].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+				if (!uCount.equals("0"))
+				{
+					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
+				}
+				threadDate = myTag.getStringText().trim();
+				
+				//Get Thread Author
+				lst = cols[4].getChildren();
+				if (uCount.equals("0"))
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+				}else
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
+				}
+				threadAuthor = myTag.getStringText().trim();
+				
+				//Get Post Count
+				lst = cols[7].getChildren();
+				try{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[1]);
+				}catch(Exception e){
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
+				}
+				pCount = myTag.getStringText().trim();
+				
+				
+	
+				
+				//Get Conf ID and Forum ID
+				lst = cols[3].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
+				
+				//conf_id= //forum_id=
+				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
+				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
+				
+				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
+				forum_id = forum_id.substring(0,forum_id.indexOf("&"));
+				
+				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
+				course_id = course_id.substring(0,course_id.indexOf("&"));
+				
+				String message_id = theURL.substring(theURL.indexOf("message_id=")+11);
+				//message_id = message_id.substring(0,message_id.indexOf("&"));
+				
+				Thread t = new Thread(threadName,threadDate,threadAuthor,pCount,uCount,course_id,conf_id,forum_id,message_id);
+				
+				threads.add(t);
+			}			
+	        
+		}catch(Exception e){e.printStackTrace();}
+		return threads;
+	}	
 	
 }
