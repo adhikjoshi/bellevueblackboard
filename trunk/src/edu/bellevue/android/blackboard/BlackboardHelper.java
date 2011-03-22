@@ -57,7 +57,7 @@ public class BlackboardHelper {
 	private static HttpResponse httpResponse = null;
 	private static HttpPost httpPost = null;
 	private static NodeList nodeList;
-	private static Parser p;
+	private static Parser p = new Parser();
 	
 	// FILTERS USED FOR PARSING
 	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
@@ -134,7 +134,7 @@ public class BlackboardHelper {
 	        Log.i(LOGTAG,"Courses URL: " + COURSES_URL);
 	        httpResponse = client.execute(httpPost);
 	
-	        p = new Parser();
+	        //p = new Parser();
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
 	
 			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" \\/webapps.*"));
@@ -153,7 +153,7 @@ public class BlackboardHelper {
 		}catch(Exception e){e.printStackTrace(); courses = null;}
 		finally
 		{
-			p = null;
+			//p = null;
 			System.gc();
 		}
 		return courses;
@@ -168,7 +168,7 @@ public class BlackboardHelper {
 	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,courseId));
 	        httpResponse = client.execute(httpPost);	
 	        
-	        p = new Parser();
+	        //p = new Parser();
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
 	
 			nodeList = p.extractAllNodesThatMatch(tableTagFilter);
@@ -241,6 +241,118 @@ public class BlackboardHelper {
 		return forums;
 		
 	}
+	
+	public static List<Thread> getThreads(String formid, String confid, String courseid)
+	{
+		List<Thread> threads = new ArrayList<Thread>();
+		try
+		{			
+			Log.i("THREADS", String.format(THREADS_URL,formid,confid,courseid));
+	        httpPost = new HttpPost(String.format(THREADS_URL,formid,confid,courseid));
+	        httpResponse = client.execute(httpPost);	
+	        
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+			
+	        nodeList = p.extractAllNodesThatMatch(tableTagFilter);
+	        
+			TableTag forumTable = null;
+			for (Node n : nodeList.toNodeArray())
+			{
+				if (((TableTag)n).getAttribute("summary") != null)
+				{
+					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
+					{
+						forumTable = (TableTag)n;
+						break;
+					}
+				}
+			}	        
+			org.htmlparser.tags.TableRow[] rows = forumTable.getRows();
+	        for (int x = 2; x < rows.length; x++)
+			{
+	        	String threadDate;
+				String threadName;
+				String threadAuthor;
+				String pCount;
+				String uCount;
+				
+				TableColumn[] cols = rows[x].getColumns();
+
+				//Get Unread Count
+				NodeList lst = cols[6 + (cols.length - 8)].getChildren();
+				CompositeTag myTag;
+				try
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+					uCount = myTag.getStringText().trim();
+				}catch (Exception e){
+					e.printStackTrace();
+					uCount = "0";
+					
+				}
+				
+				//Get Thread Name
+				lst = cols[3].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				threadName = myTag.getStringText().trim();
+				
+				//Get Thread Date
+				lst = cols[2].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+				if (!uCount.equals("0"))
+				{
+					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
+				}
+				threadDate = myTag.getStringText().trim();
+				
+				//Get Thread Author
+				lst = cols[4].getChildren();
+				if (uCount.equals("0"))
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+				}else
+				{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
+					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
+				}
+				threadAuthor = myTag.getStringText().trim();
+				
+				//Get Post Count
+				lst = cols[7].getChildren();
+				try{
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[1]);
+				}catch(Exception e){
+					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
+				}
+				pCount = myTag.getStringText().trim();
+				
+				//Get Conf ID and Forum ID
+				lst = cols[3].getChildren();
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
+				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
+				
+				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
+				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
+				
+				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
+				forum_id = forum_id.substring(0,forum_id.indexOf("&"));
+				
+				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
+				course_id = course_id.substring(0,course_id.indexOf("&"));
+				
+				String message_id = theURL.substring(theURL.indexOf("message_id=")+11);
+				
+				Thread t = new Thread(threadName,threadDate,threadAuthor,pCount,uCount,course_id,conf_id,forum_id,message_id);
+				
+				threads.add(t);
+			}			
+	        
+		}catch(Exception e){e.printStackTrace();}
+		return threads;
+	}	
+	
+	
+	
 	// PRIVATE HELPER METHODS
 
 	private static HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
@@ -292,121 +404,5 @@ public class BlackboardHelper {
 		    return "";
 		}
     }
-	
-	public static List<Thread> getThreads(String formid, String confid, String courseid)
-	{
-		List<Thread> threads = new ArrayList<Thread>();
-		try
-		{			
-			Log.i("THREADS", String.format(THREADS_URL,formid,confid,courseid));
-	        httpPost = new HttpPost(String.format(THREADS_URL,formid,confid,courseid));
-	        httpResponse = client.execute(httpPost);	
-	        
-	        p = new Parser();
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-			
-	        nodeList = p.extractAllNodesThatMatch(tableTagFilter);
-	        
-			TableTag forumTable = null;
-			for (Node n : nodeList.toNodeArray())
-			{
-				if (((TableTag)n).getAttribute("summary") != null)
-				{
-					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
-					{
-						forumTable = (TableTag)n;
-						break;
-					}
-				}
-			}	        
-			org.htmlparser.tags.TableRow[] rows = forumTable.getRows();
-	        for (int x = 2; x < rows.length; x++)
-			{
-	        	String threadDate;
-				String threadName;
-				String threadAuthor;
-				String pCount;
-				String uCount;
-				
-				TableColumn[] cols = rows[x].getColumns();
-
-				//Get Unread Count
-				NodeList lst = cols[6 + (cols.length - 8)].getChildren();
-				CompositeTag myTag;
-				try
-				{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-					uCount = myTag.getStringText().trim();
-				}catch (Exception e){
-					e.printStackTrace();
-					uCount = "0";
-					
-				}
-				
-				
-				//Get Thread Name
-				lst = cols[3].getChildren();
-				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
-				threadName = myTag.getStringText().trim();
-				
-				//Get Thread Date
-				lst = cols[2].getChildren();
-				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-				if (!uCount.equals("0"))
-				{
-					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
-				}
-				threadDate = myTag.getStringText().trim();
-				
-				//Get Thread Author
-				lst = cols[4].getChildren();
-				if (uCount.equals("0"))
-				{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-				}else
-				{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
-				}
-				threadAuthor = myTag.getStringText().trim();
-				
-				//Get Post Count
-				lst = cols[7].getChildren();
-				try{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[1]);
-				}catch(Exception e){
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
-				}
-				pCount = myTag.getStringText().trim();
-				
-				
-	
-				
-				//Get Conf ID and Forum ID
-				lst = cols[3].getChildren();
-				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
-				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
-				
-				//conf_id= //forum_id=
-				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
-				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
-				
-				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
-				forum_id = forum_id.substring(0,forum_id.indexOf("&"));
-				
-				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
-				course_id = course_id.substring(0,course_id.indexOf("&"));
-				
-				String message_id = theURL.substring(theURL.indexOf("message_id=")+11);
-				//message_id = message_id.substring(0,message_id.indexOf("&"));
-				
-				Thread t = new Thread(threadName,threadDate,threadAuthor,pCount,uCount,course_id,conf_id,forum_id,message_id);
-				
-				threads.add(t);
-			}			
-	        
-		}catch(Exception e){e.printStackTrace();}
-		return threads;
-	}	
 	
 }
