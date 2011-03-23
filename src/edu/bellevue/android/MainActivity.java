@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -35,7 +36,15 @@ public class MainActivity extends Activity {
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
         prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        Editor e = prefs.edit();
+        if (prefs.getBoolean("firstRun", true))
+        {
+        	e.putBoolean("wifi",true);
+        	e.putBoolean("mobile", true);
+        }
         
+        e.putBoolean("firstRun", false);
+        e.commit();
         // AutoLogin stuff
         if (prefs.getBoolean("autologin", false))
         {
