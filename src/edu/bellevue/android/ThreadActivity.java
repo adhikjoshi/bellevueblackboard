@@ -63,6 +63,7 @@ public class ThreadActivity extends ListActivity {
 	
     public boolean onCreateOptionsMenu(Menu m)
     {
+    	m.add("New Thread");
     	m.add("Settings");
     	return super.onCreateOptionsMenu(m);
     }
@@ -73,6 +74,10 @@ public class ThreadActivity extends ListActivity {
     	{
     		Intent i = new Intent(this,PrefActivity.class);
     		startActivity(i);
+    	}
+    	if (mi.getTitle().equals("New Thread"))
+    	{
+    		Toast.makeText(this, "Not Implemented Yet!", Toast.LENGTH_LONG).show();
     	}
     	return true;
     }
@@ -100,7 +105,6 @@ public class ThreadActivity extends ListActivity {
 	
 	protected class getThreadsThread implements Runnable
 	{
-
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
