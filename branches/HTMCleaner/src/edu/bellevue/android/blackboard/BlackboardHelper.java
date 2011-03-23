@@ -44,6 +44,7 @@ import org.htmlparser.tags.TableColumn;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
+import android.os.Debug;
 import android.util.Log;
 
 public class BlackboardHelper {
@@ -131,6 +132,7 @@ public class BlackboardHelper {
 	}
 	public static List<Course> getCourses()
 	{
+		Debug.startMethodTracing("HtmlCleaner");
 		List<Course> courses = new ArrayList<Course>();
 		try
 		{
@@ -167,6 +169,7 @@ public class BlackboardHelper {
 		{
 			System.gc();
 		}
+		Debug.stopMethodTracing();
 		return courses;
 	}
 	public static List<Forum> getForums(String courseId)
