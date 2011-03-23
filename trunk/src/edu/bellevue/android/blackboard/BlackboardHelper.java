@@ -44,6 +44,10 @@ import org.htmlparser.util.NodeList;
 
 import android.util.Log;
 
+/* After some benchmark testing with Traceview it seems HtmlParser lib is better than HtmlCleaner lib
+ * on average the HtmlParser version finishes 200ms faster and uses about 15k less memory than HtmlCleaner.
+ */
+
 public class BlackboardHelper {
 	private static final String LOGTAG = "BB_HELPER";
 	
