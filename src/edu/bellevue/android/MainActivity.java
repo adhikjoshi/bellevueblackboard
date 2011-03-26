@@ -16,6 +16,9 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.h3r3t1c.filechooser.FileChooser;
+
 import edu.bellevue.android.blackboard.BlackboardHelper;
 
 public class MainActivity extends Activity {
@@ -31,7 +34,6 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        
         setContentView(R.layout.main);
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
