@@ -77,7 +77,14 @@ public class ThreadActivity extends ListActivity {
     	}
     	if (mi.getTitle().equals("New Thread"))
     	{
-    		Toast.makeText(this, "Not Implemented Yet!", Toast.LENGTH_LONG).show();
+    		Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
+    		i.putExtra("courseid", courseId);
+    		i.putExtra("confid", confId);
+    		i.putExtra("forumid", forumId);
+    		i.putExtra("method", "newthread");
+    		startActivity(i);
+    		
+    		
     	}
     	return true;
     }
