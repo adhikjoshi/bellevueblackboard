@@ -1,6 +1,9 @@
 package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,6 +21,7 @@ import java.util.List;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -25,6 +29,9 @@ import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -34,14 +41,17 @@ import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 import org.htmlparser.Node;
 import org.htmlparser.Parser;
+import org.htmlparser.filters.HasAttributeFilter;
 import org.htmlparser.filters.LinkRegexFilter;
 import org.htmlparser.filters.TagNameFilter;
 import org.htmlparser.tags.CompositeTag;
+import org.htmlparser.tags.InputTag;
 import org.htmlparser.tags.LinkTag;
 import org.htmlparser.tags.TableColumn;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
+import android.os.Environment;
 import android.util.Log;
 
 /* After some benchmark testing with Traceview it seems HtmlParser lib is better than HtmlCleaner lib
@@ -348,6 +358,60 @@ public class BlackboardHelper {
 		}catch(Exception e){e.printStackTrace();}
 		return threads;
 	}	
+	
+	public static boolean createNewThread(String courseid, String confid, String forumid, String subject, String body)
+	{		
+		// first we need to get this 'nonce' security thing (Session?)
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forumid+"&course_id="+courseid+"&nav=discussion_board_entry&conf_id="+confid);
+		try {
+			httpResponse = client.execute(httpPost);
+			p = new Parser();
+			p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+			nodeList = p.parse(null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+				
+		nodeList = nodeList.extractAllNodesThatMatch(new HasAttributeFilter("name","blackboard.platform.security.NonceUtil.nonce"), true);
+		String nonceString = ((InputTag)nodeList.elementAt(0)).getAttribute("value");
+
+		
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=save&pageLink=list_messages&nav=discussion_board_entry&course_id="+courseid+"&nav=discussion_board_entry");
+		
+		MultipartEntity multi = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+		try{
+		multi.addPart("blackboard.platform.security.NonceUtil.nonce",new StringBody(nonceString));
+		multi.addPart("do",new StringBody("create"));
+		multi.addPart("strHandle",new StringBody("db_thread_list_entry"));
+		multi.addPart("title",new StringBody(subject));
+		multi.addPart("description.type",new StringBody("H"));
+		multi.addPart("textbox_prefix",new StringBody("description."));
+		multi.addPart("description.text",new StringBody(body));
+		multi.addPart("submit.x",new StringBody("27"));
+		multi.addPart("submit.y",new StringBody("4"));
+		multi.addPart("nav",new StringBody("discussion_board_entry"));
+		multi.addPart("conf_id",new StringBody(confid));
+		multi.addPart("do",new StringBody("create"));
+		multi.addPart("course_id",new StringBody(courseid));
+		multi.addPart("type",new StringBody("thread"));
+		multi.addPart("forum_id",new StringBody(forumid));
+		}catch(Exception e){}
+		
+		httpPost.setEntity(multi);
+		try {
+			httpResponse = client.execute(httpPost);
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	
 	
 	
 	
