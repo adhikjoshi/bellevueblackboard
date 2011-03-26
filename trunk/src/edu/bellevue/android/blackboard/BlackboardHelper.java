@@ -2,8 +2,6 @@ package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,6 +29,7 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
@@ -51,7 +50,6 @@ import org.htmlparser.tags.TableColumn;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
-import android.os.Environment;
 import android.util.Log;
 
 /* After some benchmark testing with Traceview it seems HtmlParser lib is better than HtmlCleaner lib
@@ -359,7 +357,7 @@ public class BlackboardHelper {
 		return threads;
 	}	
 	
-	public static boolean createNewThread(String courseid, String confid, String forumid, String subject, String body)
+	public static boolean createNewThread(String courseid, String confid, String forumid, String subject, String body, String attachedFile)
 	{		
 		// first we need to get this 'nonce' security thing (Session?)
 		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forumid+"&course_id="+courseid+"&nav=discussion_board_entry&conf_id="+confid);
@@ -396,6 +394,10 @@ public class BlackboardHelper {
 		multi.addPart("course_id",new StringBody(courseid));
 		multi.addPart("type",new StringBody("thread"));
 		multi.addPart("forum_id",new StringBody(forumid));
+		if (attachedFile != null)
+		{
+			multi.addPart("attachmentFile",new FileBody(new File(attachedFile)));
+		}
 		}catch(Exception e){}
 		
 		httpPost.setEntity(multi);

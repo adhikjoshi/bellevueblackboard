@@ -1,7 +1,7 @@
 package edu.bellevue.android;
 
-import edu.bellevue.android.blackboard.BlackboardHelper;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.View;
@@ -11,14 +11,26 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.h3r3t1c.filechooser.FileChooser;
+
+import edu.bellevue.android.blackboard.BlackboardHelper;
+
 public class MakePostActivity extends Activity {
 
 	private String confid;
 	private String courseid;
 	private String forumid;
 	private String method;
+	private String attachedFile = null;
 	/** Called when the activity is first created. */
 	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data){
+		if (resultCode ==1)
+		{
+			attachedFile = data.getStringExtra("fileName");
+			((TextView)findViewById(R.id.txtAttachedFile)).setText("Attached: " + attachedFile);
+		}
+	}
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.messagemaker);
@@ -33,6 +45,9 @@ public class MakePostActivity extends Activity {
 	    ((Button)findViewById(R.id.btnBold)).setOnClickListener(new simpleFormatListener("<b>","</b>"));
 	    ((Button)findViewById(R.id.btnItalic)).setOnClickListener(new simpleFormatListener("<i>","</i>"));
 	    ((Button)findViewById(R.id.btnUnderline)).setOnClickListener(new simpleFormatListener("<u>","</u>"));
+	    ((Button)findViewById(R.id.btnList)).setOnClickListener(new simpleFormatListener("<ul>\n", "\n</ul>"));
+	    ((Button)findViewById(R.id.btnListItem)).setOnClickListener(new simpleFormatListener("<li>", "</li>"));
+	    ((Button)findViewById(R.id.btnAttachFile)).setOnClickListener(new attachFileListener());
 	    ((Button)findViewById(R.id.btnThreadSubmit)).setOnClickListener(new submitListener());
 	    ((Button)findViewById(R.id.btnThreadCancel)).setOnClickListener(new cancelListener());
 	    // load the necessary values
@@ -61,7 +76,7 @@ public class MakePostActivity extends Activity {
 			// TODO Auto-generated method stub
 			String subject = ((EditText)findViewById(R.id.txtThreadSubject)).getText().toString();
 			String body = ((EditText)findViewById(R.id.txtThreadBody)).getText().toString();
-			BlackboardHelper.createNewThread(courseid, confid, forumid, subject, body);
+			BlackboardHelper.createNewThread(courseid, confid, forumid, subject, body, attachedFile);
 			setResult(1);
 			finish();
 			
@@ -73,6 +88,15 @@ public class MakePostActivity extends Activity {
 		public void onClick(View v) {
 			setResult(0);
 			finish();
+		}
+		
+	}
+	class attachFileListener implements OnClickListener{
+
+		public void onClick(View arg0) {
+			// TODO Auto-generated method stub
+			Intent i = new Intent(MakePostActivity.this,FileChooser.class);
+			startActivityForResult(i, 0);
 		}
 		
 	}
