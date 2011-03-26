@@ -67,7 +67,16 @@ public class ThreadActivity extends ListActivity {
     	m.add("Settings");
     	return super.onCreateOptionsMenu(m);
     }
-    
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent)
+    {
+    	if (resultCode == 1)
+    	{
+    		pd = ProgressDialog.show(this, "Please Wait", "Refreshing Threads...");
+    	    
+    	    Thread t = new Thread(new getThreadsThread());
+    	    t.start();	
+    	}
+    }
     public boolean onOptionsItemSelected(MenuItem mi)
     {
     	if (mi.getTitle().equals("Settings"))
@@ -82,8 +91,7 @@ public class ThreadActivity extends ListActivity {
     		i.putExtra("confid", confId);
     		i.putExtra("forumid", forumId);
     		i.putExtra("method", "newthread");
-    		startActivity(i);
-    		
+    		startActivityForResult(i, 0);
     		
     	}
     	return true;
