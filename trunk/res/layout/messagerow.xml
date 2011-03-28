@@ -23,7 +23,7 @@
             android:id="@+id/middletext"
             android:ellipsize="marquee"
         android:singleLine="false"/>
-        <TextView
+        <WebView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1" 
