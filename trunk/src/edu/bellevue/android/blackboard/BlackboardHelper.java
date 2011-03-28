@@ -14,6 +14,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -48,6 +50,7 @@ import org.htmlparser.tags.CompositeTag;
 import org.htmlparser.tags.FormTag;
 import org.htmlparser.tags.InputTag;
 import org.htmlparser.tags.LinkTag;
+import org.htmlparser.tags.ParagraphTag;
 import org.htmlparser.tags.ScriptTag;
 import org.htmlparser.tags.TableColumn;
 import org.htmlparser.tags.TableRow;
@@ -71,7 +74,7 @@ public class BlackboardHelper {
 	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
 	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private static final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
-	
+	private static String displayUrl = null;
 	//Properties used
 	private static boolean _loggedIn = false;
 	
@@ -336,7 +339,7 @@ public class BlackboardHelper {
 					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
 					uCount = myTag.getStringText().trim();
 				}catch (Exception e){
-					e.printStackTrace();
+					
 					uCount = "0";
 					
 				}
@@ -418,7 +421,6 @@ public class BlackboardHelper {
 	        //WriteEntityToFile(forumsResponse.getEntity(), "MessagesOut.html");
 	        nodeList = p.parse(scriptTagFilter);
 	        String treeUrl= null;
-	        String displayUrl = null;
 	        //String displayUrl = null;
 	        for (Node t:nodeList.toNodeArray())
 	        {
@@ -462,6 +464,73 @@ public class BlackboardHelper {
 		return msgIds;
 	}
 
+	public static Message getMessage()
+	{
+		try{
+		TableTag t;
+		TableRow[] rows;
+		Message m;
+
+		String msgUrl = displayUrl + "&message_id="+message_id+"&thread_id="+thread_id;
+
+		httpPost = new HttpPost(msgUrl);
+		httpResponse = client.execute(httpPost);
+		
+		p = new Parser();
+		p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+		
+		nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
+		nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
+		
+		t = (TableTag)(nodeList.elementAt(0));
+		rows = t.getRows();
+		Log.i("foo",msgUrl);
+		
+		// ROW 0 -> Subject Line.
+		TableColumn[] cols = rows[0].getColumns();
+		String subject = cols[0].getStringText().trim().replace("<strong>","").replace("</strong>", "");
+		subject = subject.replace("Subject: ", "");
+		subject = subject.replace("&nbsp;","");
+		subject = "<b>" + subject + "</b>";
+		// Get Author
+		cols = rows[1].getColumns();
+		String author = null;
+		try{
+			author =  ((LinkTag)((cols[0].getChildren().extractAllNodesThatMatch(anchorTagFilter,true)).elementAt(0))).getStringText();
+		}catch (Exception e)
+		{
+			String selfAuthor = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
+			selfAuthor = selfAuthor.substring(selfAuthor.indexOf("Author:") + 7);
+			selfAuthor = selfAuthor.substring(0,selfAuthor.indexOf("<br>"));
+			selfAuthor = selfAuthor.replace("\"", "");
+			author = selfAuthor.replace("</strong>", "").trim();
+		}
+		
+		// Get Posted Date
+		String postedDate = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
+		postedDate = postedDate.substring(postedDate.indexOf("Posted date:") + 12);
+		postedDate = postedDate.substring(0,postedDate.indexOf("<br>"));
+		postedDate = postedDate.replace("</strong>", "").trim();
+		
+		// get actual message
+		nodeList = t.getChildren().extractAllNodesThatMatch(tableTagFilter, true);
+		t = (TableTag)nodeList.elementAt(1);
+		String bodyinfo = null;
+		if (thread_id.equals(message_id))
+		{
+			bodyinfo = t.getRow(0).getColumns()[0].getStringText();
+		}else
+		{
+			bodyinfo = t.getRow(1).getColumns()[0].getStringText();
+		}
+		bodyinfo = "<h5>Body:</h5>"+bodyinfo;
+		postedDate = "<i>" + postedDate + "</i>";
+		m = new Message(subject, postedDate, author, bodyinfo, course_id, conf_id, forum_id, message_id, thread_id);
+		return m;
+		}catch(Exception e){return null;}
+	}
+
+	
 	public static boolean createNewThread(String subject, String body, String attachedFile)
 	{		
 		// first we need to get this 'nonce' security thing (Session?)
@@ -517,11 +586,7 @@ public class BlackboardHelper {
 		}
 		return true;
 	}
-	
-	
-	
-	
-	
+
 	// PRIVATE HELPER METHODS
 
 	private static HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException

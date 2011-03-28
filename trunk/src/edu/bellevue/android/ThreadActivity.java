@@ -1,5 +1,6 @@
 package edu.bellevue.android;
 
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -63,7 +65,15 @@ public class ThreadActivity extends ListActivity {
 		edu.bellevue.android.blackboard.Thread selectedThread = (edu.bellevue.android.blackboard.Thread)threads.get(position);
 		
 		//Debug use only//
+		BlackboardHelper.setMessageId(selectedThread.message_id);
 		Hashtable <String,String> msgIds = BlackboardHelper.getMessageIds();
+		Enumeration<String> keyEnum = msgIds.keys();
+		while(keyEnum.hasMoreElements())
+		{
+			String mId = keyEnum.nextElement();
+			String tId = msgIds.get(mId);
+			Log.i("MESSAGE","ThreadID: " + tId + " MessageID: " + mId);
+		}
 		Toast.makeText(this, "Found: " + msgIds.size() + " messages", Toast.LENGTH_LONG).show();
 		//end debug stuff//
 		
