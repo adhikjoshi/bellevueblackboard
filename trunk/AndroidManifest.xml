@@ -23,6 +23,7 @@
         <activity android:name=".ThreadActivity"></activity>
         <activity android:name="MakePostActivity"></activity>
         <activity android:name="com.h3r3t1c.filechooser.FileChooser"></activity>
+        <activity android:name="MessageActivity"></activity>
 
     </application>
 </manifest>
