@@ -24,6 +24,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardHelper;
+import edu.bellevue.android.blackboard.Forum;
 
 public class ThreadActivity extends ListActivity {
 
@@ -62,21 +63,26 @@ public class ThreadActivity extends ListActivity {
 	}
 	public void onListItemClick(ListView l, View v, int position, long id)
 	{
-		edu.bellevue.android.blackboard.Thread selectedThread = (edu.bellevue.android.blackboard.Thread)threads.get(position);
 		
-		//Debug use only//
-		BlackboardHelper.setMessageId(selectedThread.message_id);
-		Hashtable <String,String> msgIds = BlackboardHelper.getMessageIds();
-		Enumeration<String> keyEnum = msgIds.keys();
-		while(keyEnum.hasMoreElements())
+    	super.onListItemClick(l, v, position, id);
+    	if (ConnChecker.shouldConnect(prefs, ctx))
 		{
-			String mId = keyEnum.nextElement();
-			String tId = msgIds.get(mId);
-			Log.i("MESSAGE","ThreadID: " + tId + " MessageID: " + mId);
-		}
-		Toast.makeText(this, "Found: " + msgIds.size() + " messages", Toast.LENGTH_LONG).show();
-		//end debug stuff//
-		
+        	edu.bellevue.android.blackboard.Thread t = (edu.bellevue.android.blackboard.Thread)threads.get(position);
+    		BlackboardHelper.setThreadId(t.message_id);
+    		BlackboardHelper.setMessageId(t.message_id);
+        	Intent i = new Intent(ThreadActivity.this,MessageActivity.class);
+        	i.putExtra("name", t.threadName);
+        	startActivity(i);
+		}else
+		{
+			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
+			{
+				Toast.makeText(ThreadActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
+			}else
+			{
+				ConnChecker.showUnableToConnect(ThreadActivity.this);
+			}
+		}		
 	}
     public boolean onCreateOptionsMenu(Menu m)
     {
