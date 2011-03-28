@@ -1,6 +1,7 @@
 package edu.bellevue.android;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
@@ -15,7 +16,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.Html;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
@@ -24,16 +24,20 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardHelper;
+import edu.bellevue.android.blackboard.MessageComparator;
 
 public class MessageActivity extends ListActivity {
 
 	private static final int THREAD_COMPLETE = 1;
 	private static final int CONN_NOT_ALLOWED = 2;
 	private static final int CONN_NOT_POSSIBLE = 3;
+	private static final int DOWNLOAD_COMPLETE = 4;
 	
 	private List<edu.bellevue.android.blackboard.Message> messages;
 	private String friendlyName;
@@ -102,6 +106,10 @@ public class MessageActivity extends ListActivity {
 			case THREAD_COMPLETE:
 				setListAdapter(new MessageAdapter(ctx, android.R.layout.simple_list_item_1,messages));
 				break;
+			case DOWNLOAD_COMPLETE:
+				Toast.makeText(MessageActivity.this, "Download Complete", Toast.LENGTH_SHORT).show();
+				Toast.makeText(MessageActivity.this, "Downloaded to /sdcard/Downloads/BU/", Toast.LENGTH_SHORT).show();
+				break;
 			case CONN_NOT_ALLOWED:
     			ConnChecker.showUnableToConnect(MessageActivity.this);
     			finish();
@@ -109,6 +117,8 @@ public class MessageActivity extends ListActivity {
     		case CONN_NOT_POSSIBLE:
     			Toast.makeText(MessageActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
     			finish();
+    		
+    			
     		}
 		}
 	}
@@ -121,6 +131,7 @@ public class MessageActivity extends ListActivity {
 			{
 				
 				messages = getAllMessages();
+				Collections.sort(messages, new MessageComparator());
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
@@ -155,7 +166,7 @@ public class MessageActivity extends ListActivity {
                         TextView tt = (TextView) v.findViewById(R.id.toptext);
                         
                         TextView mt = (TextView) v.findViewById(R.id.middletext);
-                        TextView bt = (TextView) v.findViewById(R.id.bottomtext);
+                        WebView bt = (WebView) v.findViewById(R.id.bottomtext);
                         if (tt != null) {
                               tt.setText(Html.fromHtml(o.getMsgName())); 
                         }
@@ -163,7 +174,10 @@ public class MessageActivity extends ListActivity {
                         	mt.setText("By: " + o.getMsgAuthor() + "\nOn: "+Html.fromHtml(o.getMsgDate()));
                         }
                         if(bt != null){
-                              bt.setText(Html.fromHtml(o.getBody()));
+                        	bt.loadDataWithBaseURL("https://cyberactive.bellevue.edu", "<html><body><font color='white'>" + o.getBody() + "</font></body></html>", "text/html", "UTF-8", null);
+                        	bt.setBackgroundColor(0);
+                        	bt.setWebViewClient(new myWebClient());
+                            //bt.setText(Html.fromHtml(o.getBody()));
                         }
                 }
                 v.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
@@ -179,5 +193,44 @@ public class MessageActivity extends ListActivity {
 				});
                 return v;
         }
-    }    
+    }   
+    class downloadThread implements Runnable{
+    	private String url;
+    	public downloadThread(String url){
+    		this.url = url;
+    	}
+		public void run() {
+			if (ConnChecker.shouldConnect(prefs, ctx))
+			{
+				BlackboardHelper.downloadAttachment(url, "/sdcard/Downloads/BU"+url.substring(url.lastIndexOf("/")));
+				handler.sendEmptyMessage(DOWNLOAD_COMPLETE);
+			}else
+			{
+    			if (ConnChecker.getConnType(ctx).equals("NoNetwork"))
+    			{
+    				handler.sendEmptyMessage(CONN_NOT_POSSIBLE);
+    			}else
+    			{
+    				handler.sendEmptyMessage(CONN_NOT_ALLOWED);
+    			}
+			}	
+		}
+    	
+    }
+    class myWebClient extends WebViewClient{
+    	public boolean shouldOverrideUrlLoading(WebView wv,String url)
+    	{
+    		if (url.startsWith("https://cyberactive.bellevue.edu/courses"))
+    		{
+    			pd.setTitle("Please Wait");
+    			pd.setMessage("Downloading...");
+    			pd.show();
+    			Thread t = new Thread(new downloadThread(url));
+    			t.start();
+    		}
+    		
+    		return true;
+    	}
+    }
+    
 }

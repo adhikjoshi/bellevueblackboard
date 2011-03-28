@@ -2,6 +2,7 @@ package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,8 +15,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -30,10 +29,12 @@ import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -57,7 +58,11 @@ import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
+import android.content.Context;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebView;
 
 /* After some benchmark testing with Traceview it seems HtmlParser lib is better than HtmlCleaner lib
  * on average the HtmlParser version finishes 200ms faster and uses about 15k less memory than HtmlCleaner.
@@ -585,6 +590,29 @@ public class BlackboardHelper {
 			e.printStackTrace();
 		}
 		return true;
+	}
+	public static boolean downloadAttachment (String url, String savePath){
+		try
+		{
+			httpPost = new HttpPost(url);
+	        httpResponse = client.execute(httpPost);
+	        InputStream is = httpResponse.getEntity().getContent();
+	        File f = new File(savePath);
+	        f.mkdirs();
+	        f.delete();
+	        
+	        FileOutputStream fos = new FileOutputStream(f);
+	        
+	        byte buf[]=new byte[1024];
+	        int len;
+	        while((len=is.read(buf))>0)
+	        {
+	        	fos.write(buf,0,len);
+	        }
+	        fos.close();
+	        is.close();
+	        return true;
+		}catch (Exception e){return false;}
 	}
 
 	// PRIVATE HELPER METHODS
