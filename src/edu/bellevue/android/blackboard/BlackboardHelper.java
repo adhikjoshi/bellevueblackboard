@@ -14,6 +14,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.http.HttpResponse;
@@ -44,9 +45,12 @@ import org.htmlparser.filters.HasAttributeFilter;
 import org.htmlparser.filters.LinkRegexFilter;
 import org.htmlparser.filters.TagNameFilter;
 import org.htmlparser.tags.CompositeTag;
+import org.htmlparser.tags.FormTag;
 import org.htmlparser.tags.InputTag;
 import org.htmlparser.tags.LinkTag;
+import org.htmlparser.tags.ScriptTag;
 import org.htmlparser.tags.TableColumn;
+import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
@@ -64,8 +68,22 @@ public class BlackboardHelper {
 	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
 	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
 	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
-	private static HttpClient client = null;
+	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
+	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
+	private static final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
+	
+	//Properties used
 	private static boolean _loggedIn = false;
+	
+	private static String course_id = null;
+	private static String forum_id = null;
+	private static String conf_id = null;
+	private static String thread_id = null;
+	private static String message_id = null;
+	
+	
+	// variables used throughout 
+	private static HttpClient client = null;
 	private static HttpResponse httpResponse = null;
 	private static HttpPost httpPost = null;
 	private static NodeList nodeList;
@@ -75,7 +93,33 @@ public class BlackboardHelper {
 	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
 	private static TagNameFilter anchorTagFilter = new TagNameFilter("a");
 	private static TagNameFilter spanTagFilter = new TagNameFilter("span");
+	private static TagNameFilter scriptTagFilter = new TagNameFilter("script");
 	
+	// SETTER METHODS
+	public static void setCourseId(String courseId){
+		course_id = courseId;
+		forum_id = null;
+		conf_id = null;
+		thread_id = null;
+		message_id = null;
+	}
+	public static void setForumId(String forumId){
+		forum_id = forumId;
+		thread_id = null;
+		message_id = null;
+	}
+	public static void setConfId(String confId){
+		conf_id = confId;
+		thread_id = null;
+		message_id = null;
+	}
+	public static void setThreadId(String threadId){
+		thread_id = threadId;
+		message_id = null;
+	}
+	public static void setMessageId(String messageId){
+		message_id = messageId;
+	}
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	
 	public static boolean logIn(String userName, String password)
@@ -137,6 +181,7 @@ public class BlackboardHelper {
 	{
 		return _loggedIn;
 	}
+
 	public static List<Course> getCourses()
 	{
 		List<Course> courses = new ArrayList<Course>();
@@ -168,13 +213,13 @@ public class BlackboardHelper {
 		}
 		return courses;
 	}
-	public static List<Forum> getForums(String courseId)
+	public static List<Forum> getForums()
 	{
 		List<Forum> forums = new ArrayList<Forum>();
 		try
 		{
-			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,courseId));
-	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,courseId));
+			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,course_id));
+	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,course_id));
 	        httpResponse = client.execute(httpPost);	
 	        
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
@@ -247,14 +292,13 @@ public class BlackboardHelper {
 		return forums;
 		
 	}
-	
-	public static List<Thread> getThreads(String formid, String confid, String courseid)
+	public static List<Thread> getThreads()
 	{
 		List<Thread> threads = new ArrayList<Thread>();
 		try
 		{			
-			Log.i("THREADS", String.format(THREADS_URL,formid,confid,courseid));
-	        httpPost = new HttpPost(String.format(THREADS_URL,formid,confid,courseid));
+			Log.i("THREADS", String.format(THREADS_URL,forum_id,conf_id,course_id));
+	        httpPost = new HttpPost(String.format(THREADS_URL,forum_id,conf_id,course_id));
 	        httpResponse = client.execute(httpPost);	
 	        
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
@@ -356,11 +400,72 @@ public class BlackboardHelper {
 		}catch(Exception e){e.printStackTrace();}
 		return threads;
 	}	
-	
-	public static boolean createNewThread(String courseid, String confid, String forumid, String subject, String body, String attachedFile)
+	public static Hashtable<String,String> getMessageIds()
+	{
+		
+		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
+		
+		//load site that contains all replies, use this to get the IDs we need to get the details.
+		try
+		{
+			// we need to get the URL for the message tree.
+			String str = String.format(MESSAGES_URL,forum_id,course_id,conf_id,message_id);
+	        httpPost = new HttpPost(str);
+	        httpResponse = client.execute(httpPost);	
+	        
+	        p = new Parser();	        
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+	        //WriteEntityToFile(forumsResponse.getEntity(), "MessagesOut.html");
+	        nodeList = p.parse(scriptTagFilter);
+	        String treeUrl= null;
+	        String displayUrl = null;
+	        //String displayUrl = null;
+	        for (Node t:nodeList.toNodeArray())
+	        {
+	        	String scriptCode = ((ScriptTag)t).getScriptCode();
+	        	if (scriptCode.contains("treeUrl"))
+	        	{
+	        		treeUrl = scriptCode.substring(scriptCode.indexOf("treeUrl = ")+11);
+	        		treeUrl = treeUrl.substring(0,treeUrl.indexOf(";")-1);
+	        		treeUrl = TREE_URL + treeUrl;
+	        		
+	        		displayUrl = scriptCode.substring(scriptCode.indexOf("displayUrl = ")+14);
+	        		displayUrl = displayUrl.substring(0,displayUrl.indexOf(";")-1);
+	        		displayUrl = DISPLAY_URL + displayUrl;
+	        		break;
+	        	}
+	        }
+	        
+	        // now we need to get the form that contains all the messages:
+	        httpPost = new HttpPost(treeUrl);
+	        httpResponse = client.execute(httpPost);	
+	        
+	        p = new Parser();	        
+	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+	        
+			nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
+			nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
+			TableTag t = (TableTag)(nodeList.elementAt(0));
+			TableRow[] rows = t.getRows();
+			for (TableRow r : rows)
+			{
+				TableColumn[] cols = r.getColumns();
+				TableColumn correctCol = cols[3];
+				nodeList = correctCol.getChildren().extractAllNodesThatMatch(anchorTagFilter,true);
+				String href = ((LinkTag)(nodeList.elementAt(1))).extractLink();
+				href = href.substring(href.indexOf("(") + 1);
+				href = href.substring(0,href.lastIndexOf(","));
+				href = href.replace("'","");
+				msgIds.put(href.substring(href.indexOf(",")+1),href.substring(0,href.indexOf(",")));
+			}
+		}catch(Exception e){}
+		return msgIds;
+	}
+
+	public static boolean createNewThread(String subject, String body, String attachedFile)
 	{		
 		// first we need to get this 'nonce' security thing (Session?)
-		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forumid+"&course_id="+courseid+"&nav=discussion_board_entry&conf_id="+confid);
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
 		try {
 			httpResponse = client.execute(httpPost);
 			p = new Parser();
@@ -375,7 +480,7 @@ public class BlackboardHelper {
 		String nonceString = ((InputTag)nodeList.elementAt(0)).getAttribute("value");
 
 		
-		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=save&pageLink=list_messages&nav=discussion_board_entry&course_id="+courseid+"&nav=discussion_board_entry");
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=save&pageLink=list_messages&nav=discussion_board_entry&course_id="+course_id+"&nav=discussion_board_entry");
 		
 		MultipartEntity multi = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
 		try{
@@ -389,11 +494,11 @@ public class BlackboardHelper {
 		multi.addPart("submit.x",new StringBody("27"));
 		multi.addPart("submit.y",new StringBody("4"));
 		multi.addPart("nav",new StringBody("discussion_board_entry"));
-		multi.addPart("conf_id",new StringBody(confid));
+		multi.addPart("conf_id",new StringBody(conf_id));
 		multi.addPart("do",new StringBody("create"));
-		multi.addPart("course_id",new StringBody(courseid));
+		multi.addPart("course_id",new StringBody(course_id));
 		multi.addPart("type",new StringBody("thread"));
-		multi.addPart("forum_id",new StringBody(forumid));
+		multi.addPart("forum_id",new StringBody(forum_id));
 		if (attachedFile != null)
 		{
 			multi.addPart("attachmentFile",new FileBody(new File(attachedFile)));

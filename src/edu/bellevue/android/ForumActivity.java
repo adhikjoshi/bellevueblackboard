@@ -31,7 +31,7 @@ public class ForumActivity extends ListActivity {
 	private static final int CONN_NOT_POSSIBLE = 3;
 	
 	private List<Forum> forums;
-	private String courseId;
+	//private String courseId;
 	private String friendlyName;
 	private SharedPreferences prefs;
 	private Context ctx;
@@ -47,7 +47,7 @@ public class ForumActivity extends ListActivity {
 	    handler = new threadHandler();
 	    
 	    Bundle extras = getIntent().getExtras();
-	    courseId = extras.getString("course_id");
+	    BlackboardHelper.setCourseId(extras.getString("course_id"));
 	    friendlyName = extras.getString("name");
 	    
 	    setTitle(friendlyName + " - Forums");
@@ -125,7 +125,7 @@ public class ForumActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				forums = BlackboardHelper.getForums(courseId);
+				forums = BlackboardHelper.getForums();
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{

@@ -100,7 +100,7 @@ public class MakePostActivity extends Activity {
 			// TODO Auto-generated method stub
 			if (method.equals("createthread"))
 			{
-				BlackboardHelper.createNewThread(courseid, confid, forumid, subject, body, attachedFile);
+				BlackboardHelper.createNewThread(subject, body, attachedFile);
 				handler.sendEmptyMessage(0);
 			}
 		}
@@ -113,8 +113,13 @@ public class MakePostActivity extends Activity {
 			String subject = ((EditText)findViewById(R.id.txtThreadSubject)).getText().toString();
 			String body = ((EditText)findViewById(R.id.txtThreadBody)).getText().toString();
 			pd = new ProgressDialog(MakePostActivity.this);
-			pd.setMessage("Submitting post to BlackBoard");
-			pd.setTitle("Please Wait...");
+			if (method.equals("newthread")){
+				pd.setMessage("Creating thread...");
+			}
+			else{
+				pd.setMessage("Sumbitting reply...");
+			}
+			pd.setTitle("Please Wait");
 			pd.show();
 			Thread t = new Thread(new MakePostThread("createthread", subject, body, attachedFile));
 			t.start();
