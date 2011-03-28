@@ -1,8 +1,11 @@
 package edu.bellevue.android;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Editable;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -13,6 +16,7 @@ import android.widget.Toast;
 
 import com.h3r3t1c.filechooser.FileChooser;
 
+//import edu.bellevue.android.ForumActivity.ForumAdapter;
 import edu.bellevue.android.blackboard.BlackboardHelper;
 
 public class MakePostActivity extends Activity {
@@ -22,6 +26,8 @@ public class MakePostActivity extends Activity {
 	private String forumid;
 	private String method;
 	private String attachedFile = null;
+	private Handler handler = null;
+	private ProgressDialog pd = null;
 	/** Called when the activity is first created. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -34,8 +40,7 @@ public class MakePostActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.messagemaker);
-	    
-	    
+	    handler = new MakePostHandler();
 	    EditText bodyText = ((EditText)findViewById(R.id.txtThreadBody));
 	    
 	    Bundle extras = getIntent().getExtras();
@@ -69,17 +74,50 @@ public class MakePostActivity extends Activity {
 	    }
 
 	}
-
+	class MakePostHandler extends Handler
+	{
+		public void handleMessage(Message m)
+		{
+			setResult(1);
+			pd.dismiss();
+			finish();
+		}
+	}
+	class MakePostThread implements Runnable{
+		private String method;
+		private String subject;
+		private String body;
+		private String attachedFile;
+		
+		public MakePostThread(String method, String subject, String body, String attachedFile)
+		{
+			this.method = method;
+			this.subject = subject;
+			this.body = body;
+			this.attachedFile = attachedFile;
+		}
+		public void run() {
+			// TODO Auto-generated method stub
+			if (method.equals("createthread"))
+			{
+				BlackboardHelper.createNewThread(courseid, confid, forumid, subject, body, attachedFile);
+				handler.sendEmptyMessage(0);
+			}
+		}
+		
+	}
 	class submitListener implements OnClickListener{
 
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
 			String subject = ((EditText)findViewById(R.id.txtThreadSubject)).getText().toString();
 			String body = ((EditText)findViewById(R.id.txtThreadBody)).getText().toString();
-			BlackboardHelper.createNewThread(courseid, confid, forumid, subject, body, attachedFile);
-			setResult(1);
-			finish();
-			
+			pd = new ProgressDialog(MakePostActivity.this);
+			pd.setMessage("Submitting post to BlackBoard");
+			pd.setTitle("Please Wait...");
+			pd.show();
+			Thread t = new Thread(new MakePostThread("createthread", subject, body, attachedFile));
+			t.start();
 		}
 		
 	}
