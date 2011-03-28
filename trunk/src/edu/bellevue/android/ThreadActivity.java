@@ -1,5 +1,6 @@
 package edu.bellevue.android;
 
+import java.util.Hashtable;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -17,10 +18,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardHelper;
-import edu.bellevue.android.blackboard.Forum;
 
 public class ThreadActivity extends ListActivity {
 
@@ -29,9 +30,6 @@ public class ThreadActivity extends ListActivity {
 	private static final int CONN_NOT_POSSIBLE = 3;
 	
 	private List<edu.bellevue.android.blackboard.Thread> threads;
-	private String courseId;
-	private String forumId;
-	private String confId;
 	private String friendlyName;
 	private SharedPreferences prefs;
 	private Context ctx;
@@ -47,9 +45,9 @@ public class ThreadActivity extends ListActivity {
 	    handler = new threadHandler();
 	    
 	    Bundle extras = getIntent().getExtras();
-	    courseId = extras.getString("course_id");
-	    confId = extras.getString("conf_id");
-	    forumId = extras.getString("forum_id");
+	    BlackboardHelper.setCourseId(extras.getString("course_id"));
+	    BlackboardHelper.setConfId(extras.getString("conf_id"));
+	    BlackboardHelper.setForumId(extras.getString("forum_id"));
 	    friendlyName = extras.getString("name");
 	    
 	    setTitle(friendlyName + " - Threads");
@@ -60,7 +58,16 @@ public class ThreadActivity extends ListActivity {
 	    t.start();
 	    
 	}
-	
+	public void onListItemClick(ListView l, View v, int position, long id)
+	{
+		edu.bellevue.android.blackboard.Thread selectedThread = (edu.bellevue.android.blackboard.Thread)threads.get(position);
+		
+		//Debug use only//
+		Hashtable <String,String> msgIds = BlackboardHelper.getMessageIds();
+		Toast.makeText(this, "Found: " + msgIds.size() + " messages", Toast.LENGTH_LONG).show();
+		//end debug stuff//
+		
+	}
     public boolean onCreateOptionsMenu(Menu m)
     {
     	m.add("New Thread");
@@ -87,9 +94,6 @@ public class ThreadActivity extends ListActivity {
     	if (mi.getTitle().equals("New Thread"))
     	{
     		Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
-    		i.putExtra("courseid", courseId);
-    		i.putExtra("confid", confId);
-    		i.putExtra("forumid", forumId);
     		i.putExtra("method", "newthread");
     		startActivityForResult(i, 0);
     		
@@ -123,7 +127,7 @@ public class ThreadActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				threads = BlackboardHelper.getThreads(forumId,confId,courseId);
+				threads = BlackboardHelper.getThreads();
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
