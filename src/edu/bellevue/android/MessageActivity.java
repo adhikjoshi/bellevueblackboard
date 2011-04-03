@@ -8,11 +8,14 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.Html;
@@ -29,7 +32,7 @@ import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.bellevue.android.blackboard.BlackboardHelper;
+import edu.bellevue.android.blackboard.BlackboardService;
 import edu.bellevue.android.blackboard.MessageComparator;
 
 public class MessageActivity extends ListActivity {
@@ -38,6 +41,8 @@ public class MessageActivity extends ListActivity {
 	private static final int CONN_NOT_ALLOWED = 2;
 	private static final int CONN_NOT_POSSIBLE = 3;
 	private static final int DOWNLOAD_COMPLETE = 4;
+	private static final int MSG_UPDATE_STATUS = 5;
+	private static final int MSG_INCREMENT_COUNT = 6;
 	
 	private List<edu.bellevue.android.blackboard.Message> messages;
 	private String friendlyName;
@@ -45,6 +50,28 @@ public class MessageActivity extends ListActivity {
 	private Context ctx;
 	private Handler handler;
 	private ProgressDialog pd;
+	
+	protected BlackboardService mBoundService;
+	
+	private ServiceConnection mConnection = new ServiceConnection() {
+	    public void onServiceConnected(ComponentName className, IBinder service) {
+	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+		    Bundle extras = getIntent().getExtras();
+		    friendlyName = extras.getString("name");		    
+		    setTitle(friendlyName + " - Messages");    
+		    pd = new ProgressDialog(MessageActivity.this);
+		    pd.setTitle("Please Wait");
+		    pd.setMessage("Getting Message List...");
+		    pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		    pd.show();
+		    Thread t = new Thread(new getMessagesThread());
+		    t.start();
+	    }
+
+	    public void onServiceDisconnected(ComponentName className) {
+	        mBoundService = null;
+	    }
+	};
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -54,16 +81,7 @@ public class MessageActivity extends ListActivity {
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
-	    Bundle extras = getIntent().getExtras();
-	    friendlyName = extras.getString("name");
-	    
-	    setTitle(friendlyName + " - Messages");
-	    
-	    pd = ProgressDialog.show(this, "Please Wait", "Loading Messages...");
-	    
-	    Thread t = new Thread(new getMessagesThread());
-	    t.start();
-	    
+	    bindService(new Intent(MessageActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
 	}
 
     public boolean onCreateOptionsMenu(Menu m)
@@ -84,14 +102,22 @@ public class MessageActivity extends ListActivity {
 	private List<edu.bellevue.android.blackboard.Message> getAllMessages()
 	{
 		List<edu.bellevue.android.blackboard.Message> msgs = new ArrayList<edu.bellevue.android.blackboard.Message>();
-		Hashtable <String,String> msgIds = BlackboardHelper.getMessageIds();
+		Hashtable <String,String> msgIds = mBoundService.getMessageIds();
+		Message m = new Message();
+		m.what = MSG_UPDATE_STATUS;
+		m.arg1 = msgIds.size();
+		handler.sendMessage(m);
 		Enumeration<String> keyEnum = msgIds.keys();
 		while(keyEnum.hasMoreElements())
 		{
 			String mId = keyEnum.nextElement();
 			String tId = msgIds.get(mId);
-			BlackboardHelper.setMessageId(mId);
-			msgs.add(BlackboardHelper.getMessage());		
+			// TESTING //
+			mBoundService.setThreadId(tId);
+			// END TESTING //
+			mBoundService.setMessageId(mId);
+			msgs.add(mBoundService.getMessage());
+			handler.sendEmptyMessage(MSG_INCREMENT_COUNT);
 		}
 		//end debug stuff//
 		return msgs;
@@ -100,7 +126,8 @@ public class MessageActivity extends ListActivity {
 	{
 		public void handleMessage(Message m)
 		{
-			pd.dismiss();
+			if (m.what != MSG_UPDATE_STATUS && m.what != MSG_INCREMENT_COUNT)
+				pd.dismiss();
 			switch(m.what)
 			{
 			case THREAD_COMPLETE:
@@ -117,8 +144,17 @@ public class MessageActivity extends ListActivity {
     		case CONN_NOT_POSSIBLE:
     			Toast.makeText(MessageActivity.this, "No Active Network Found", Toast.LENGTH_SHORT).show();
     			finish();
-    		
-    			
+    		case MSG_UPDATE_STATUS:
+    			pd.dismiss();
+    			pd = new ProgressDialog(MessageActivity.this);
+    			pd.setTitle("Please Wait");
+    			pd.setMessage("Loading Messages");
+				pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+				pd.setMax(m.arg1);
+				pd.show();
+    		case MSG_INCREMENT_COUNT:
+    			pd.setProgress(pd.getProgress()+1);
+    			pd.setSecondaryProgress(pd.getSecondaryProgress()+1);
     		}
 		}
 	}
@@ -202,7 +238,7 @@ public class MessageActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				BlackboardHelper.downloadAttachment(url, "/sdcard/Downloads/BU"+url.substring(url.lastIndexOf("/")));
+				mBoundService.downloadAttachment(url, "/sdcard/Downloads/BU"+url.substring(url.lastIndexOf("/")));
 				handler.sendEmptyMessage(DOWNLOAD_COMPLETE);
 			}else
 			{

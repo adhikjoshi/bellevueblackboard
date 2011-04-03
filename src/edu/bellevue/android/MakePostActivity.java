@@ -2,9 +2,12 @@ package edu.bellevue.android;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.text.Editable;
 import android.view.View;
@@ -16,8 +19,7 @@ import android.widget.Toast;
 
 import com.h3r3t1c.filechooser.FileChooser;
 
-//import edu.bellevue.android.ForumActivity.ForumAdapter;
-import edu.bellevue.android.blackboard.BlackboardHelper;
+import edu.bellevue.android.blackboard.BlackboardService;
 
 public class MakePostActivity extends Activity {
 
@@ -28,6 +30,19 @@ public class MakePostActivity extends Activity {
 	private String attachedFile = null;
 	private Handler handler = null;
 	private ProgressDialog pd = null;
+	protected BlackboardService mBoundService;
+	
+	private ServiceConnection mConnection = new ServiceConnection() {
+	    public void onServiceConnected(ComponentName className, IBinder service) {
+	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+	    }
+
+	    public void onServiceDisconnected(ComponentName className) {
+	        mBoundService = null;
+	        Toast.makeText(MakePostActivity.this, "Service Disconnected",
+	                Toast.LENGTH_SHORT).show();
+	    }
+	};
 	/** Called when the activity is first created. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -100,7 +115,7 @@ public class MakePostActivity extends Activity {
 			// TODO Auto-generated method stub
 			if (method.equals("createthread"))
 			{
-				BlackboardHelper.createNewThread(subject, body, attachedFile);
+				mBoundService.createNewThread(subject, body, attachedFile);
 				handler.sendEmptyMessage(0);
 			}
 		}
