@@ -1,13 +1,19 @@
 package edu.bellevue.android;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
@@ -16,10 +22,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
-
-import com.h3r3t1c.filechooser.FileChooser;
-
-import edu.bellevue.android.blackboard.BlackboardHelper;
+import edu.bellevue.android.blackboard.BlackboardService;
 
 public class MainActivity extends Activity {
 	
@@ -30,10 +33,32 @@ public class MainActivity extends Activity {
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
+	protected BlackboardService mBoundService;
+	
+	private ServiceConnection mConnection = new ServiceConnection() {
+	    public void onServiceConnected(ComponentName className, IBinder service) {
+	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+	    }
+
+	    public void onServiceDisconnected(ComponentName className) {
+	        mBoundService = null;
+	        Toast.makeText(MainActivity.this, "Service Disconnected",
+	                Toast.LENGTH_SHORT).show();
+	    }
+	};
+	
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        
+        startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
+        
+        bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+       
+                
+        
         setContentView(R.layout.main);
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
@@ -61,9 +86,7 @@ public class MainActivity extends Activity {
         }
         
     }
-    
-
-    
+     
     public boolean onCreateOptionsMenu(Menu m)
     {
     	m.add("Settings");
@@ -105,7 +128,7 @@ public class MainActivity extends Activity {
     		// Attempt to log in
     		if (ConnChecker.shouldConnect(prefs, ctx))
     		{
-    			BlackboardHelper.logIn(user, pass);
+    			mBoundService.logIn(user, pass);
     			handler.sendEmptyMessage(THREAD_COMPLETE);
     		}else
     		{
@@ -125,11 +148,15 @@ public class MainActivity extends Activity {
     {
     	public void handleMessage(Message m)
     	{
-    		pd.dismiss();
+    		if (pd!=null)
+    		{
+    			pd.dismiss();
+    			pd = null;
+    		}
     		switch (m.what)
     		{
     		case THREAD_COMPLETE:
-    			if (BlackboardHelper.isLoggedIn())
+    			if (mBoundService.isLoggedIn())
     			{
     				// Display if successful
     				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_SHORT).show();

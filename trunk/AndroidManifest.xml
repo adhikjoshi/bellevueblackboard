@@ -24,6 +24,7 @@
         <activity android:name="MakePostActivity"></activity>
         <activity android:name="com.h3r3t1c.filechooser.FileChooser"></activity>
         <activity android:name="MessageActivity"></activity>
+        <service android:name=".blackboard.BlackboardService"></service>
 
     </application>
 </manifest>

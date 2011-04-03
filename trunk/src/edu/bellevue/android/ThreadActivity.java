@@ -1,19 +1,19 @@
 package edu.bellevue.android;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,8 +23,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.bellevue.android.blackboard.BlackboardHelper;
-import edu.bellevue.android.blackboard.Forum;
+import edu.bellevue.android.blackboard.BlackboardService;
 
 public class ThreadActivity extends ListActivity {
 
@@ -38,6 +37,30 @@ public class ThreadActivity extends ListActivity {
 	private Context ctx;
 	private Handler handler;
 	private ProgressDialog pd;
+	
+	protected BlackboardService mBoundService;
+	
+	private ServiceConnection mConnection = new ServiceConnection() {
+	    public void onServiceConnected(ComponentName className, IBinder service) {
+	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+	        Bundle extras = getIntent().getExtras();
+	        mBoundService.setCourseId(extras.getString("course_id"));
+	        mBoundService.setConfId(extras.getString("conf_id"));
+	        mBoundService.setForumId(extras.getString("forum_id"));
+		    friendlyName = extras.getString("name");
+		    
+		    setTitle(friendlyName + " - Threads");
+		    
+		    pd = ProgressDialog.show(ThreadActivity.this, "Please Wait", "Loading Threads...");
+		    
+		    Thread t = new Thread(new getThreadsThread());
+		    t.start();
+	    }
+
+	    public void onServiceDisconnected(ComponentName className) {
+	        mBoundService = null;
+	    }
+	};
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -47,18 +70,7 @@ public class ThreadActivity extends ListActivity {
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
-	    Bundle extras = getIntent().getExtras();
-	    BlackboardHelper.setCourseId(extras.getString("course_id"));
-	    BlackboardHelper.setConfId(extras.getString("conf_id"));
-	    BlackboardHelper.setForumId(extras.getString("forum_id"));
-	    friendlyName = extras.getString("name");
-	    
-	    setTitle(friendlyName + " - Threads");
-	    
-	    pd = ProgressDialog.show(this, "Please Wait", "Loading Threads...");
-	    
-	    Thread t = new Thread(new getThreadsThread());
-	    t.start();
+	    bindService(new Intent(ThreadActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
 	    
 	}
 	public void onListItemClick(ListView l, View v, int position, long id)
@@ -68,8 +80,8 @@ public class ThreadActivity extends ListActivity {
     	if (ConnChecker.shouldConnect(prefs, ctx))
 		{
         	edu.bellevue.android.blackboard.Thread t = (edu.bellevue.android.blackboard.Thread)threads.get(position);
-    		BlackboardHelper.setThreadId(t.message_id);
-    		BlackboardHelper.setMessageId(t.message_id);
+        	mBoundService.setThreadId(t.message_id);
+        	mBoundService.setMessageId(t.message_id);
         	Intent i = new Intent(ThreadActivity.this,MessageActivity.class);
         	i.putExtra("name", t.threadName);
         	startActivity(i);
@@ -143,7 +155,7 @@ public class ThreadActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				threads = BlackboardHelper.getThreads();
+				threads = mBoundService.getThreads();
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
