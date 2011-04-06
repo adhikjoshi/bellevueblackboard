@@ -6,6 +6,7 @@ package edu.bellevue.android.blackboard;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -61,10 +62,13 @@ import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
+import android.R;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -74,14 +78,15 @@ import android.widget.Toast;
  *
  */
 public class BlackboardService extends Service {
-	private final IBinder mBinder = new BlackboardServiceBinder();
 	
+	// This stuff is needed for the 'service' part of things
+	// has nothing to do with blackboard really
+	private final IBinder mBinder = new BlackboardServiceBinder();
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
 		return mBinder;
 	}
-	
     public class BlackboardServiceBinder extends Binder {
         public BlackboardService getService() {
             return BlackboardService.this;
@@ -101,12 +106,10 @@ public class BlackboardService extends Service {
 			}
 		}, 0, delay);
 	}
-	
 	public void onDestroy()
 	{
 		Toast.makeText(this, "onDestroy()", Toast.LENGTH_SHORT).show();
 	}
-	
 	public int onStartCommand(Intent intent, int flags, int startId) {
         // We want this service to continue running until it is explicitly
         // stopped, so return sticky.
@@ -125,15 +128,15 @@ public class BlackboardService extends Service {
 	private final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private String displayUrl = null;
-	//Properties used
-	private boolean _loggedIn = false;
 	
+	//variables for Properties
+	private boolean _loggedIn = false;
 	private String course_id = null;
 	private String forum_id = null;
 	private String conf_id = null;
 	private String thread_id = null;
 	private String message_id = null;
-	
+	private String user_id = null;
 	
 	// variables used throughout 
 	private HttpClient client = null;
@@ -577,8 +580,6 @@ public class BlackboardService extends Service {
 		return m;
 		}catch(Exception e){return null;}
 	}
-
-	
 	public boolean createNewThread(String subject, String body, String attachedFile)
 	{		
 		// first we need to get this 'nonce' security thing (Session?)
@@ -658,7 +659,38 @@ public class BlackboardService extends Service {
 		}catch (Exception e){return false;}
 	}
 	
+	// Database Methods
 	
+	public SQLiteDatabase openDatabase()
+	{
+		File dbFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/blackboard/database.db3"); 
+		if (dbFile.exists())
+		{
+			return SQLiteDatabase.openOrCreateDatabase(dbFile, null);
+			//database exists, connect
+		}else
+		{
+			try {
+				InputStream is = getResources().getAssets().open("blackboard.db3");
+				dbFile.createNewFile();
+				FileOutputStream fos = new FileOutputStream(dbFile);
+				byte[] buf = new byte[1024];
+				int len;
+				while ((len = is.read(buf)) > 0) {
+					fos.write(buf, 0, len);
+				}
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			finally{
+				return SQLiteDatabase.openOrCreateDatabase(dbFile, null);
+			}
+		}
+	}
+	
+	// PRIVATE HELPER METHODS
 	private HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
     {
 		// This function will create the HttpClient we need to use for blackboard
@@ -679,7 +711,6 @@ public class BlackboardService extends Service {
         d.getParams().setParameter("http.useragent", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.13 (KHTML, like Gecko) Chrome/9.0.597.107 Safari/534.13");
         return d;
     }
-	
 	private String convertStreamToString(InputStream is)
     throws IOException {
 		// NOT MY CODE!
