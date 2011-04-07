@@ -14,10 +14,14 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -212,6 +216,25 @@ public class ThreadActivity extends ListActivity {
                     if(bt != null){
                           bt.setText("Total Posts: "+ o.pCount + " Unread: " + o.uCount);
                     }
+                    v.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
+    					// TRY USING THE VIEW, AND ITERATE TO FIND THE CORRECT ONE?
+    					public void onCreateContextMenu(ContextMenu menu, View v,
+    							ContextMenuInfo menuInfo) {
+    						// TODO Auto-generated method stub
+    						int x = getListView().indexOfChild(v); 
+    						menu.setHeaderTitle("Options...");
+    						menu.add(ContextMenu.NONE,x,ContextMenu.NONE,"Watch This Thread...");
+    					}
+    				});
+                    v.setOnClickListener(new OnClickListener() {
+						
+						public void onClick(View v) {
+							// TODO Auto-generated method stub
+							onListItemClick(getListView(), v, getListView().indexOfChild(v), v.getId());
+							
+						}
+					});
+                    return v;
             }
             return v;
         }

@@ -128,7 +128,6 @@ public class MessageActivity extends ListActivity {
 		extras.putString("thread_id", m.getThreadId());
 		i.putExtras(extras);
 		startActivityForResult(i, 1);
-		
 		return true;
     }
     
