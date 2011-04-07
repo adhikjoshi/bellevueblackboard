@@ -32,6 +32,7 @@ import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.bellevue.android.ThreadActivity.getThreadsThread;
 import edu.bellevue.android.blackboard.BlackboardService;
 import edu.bellevue.android.blackboard.MessageComparator;
 
@@ -74,6 +75,22 @@ public class MessageActivity extends ListActivity {
 	};
 	/** Called when the activity is first created. */
 	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+		unbindService(mConnection);
+	}
+	
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent)
+    {
+    	if (resultCode == 1)
+    	{
+    		pd = ProgressDialog.show(this, "Please Wait", "Refreshing Threads...");
+    	    
+    	    Thread t = new Thread(new getMessagesThread());
+    	    t.start();	
+    	}
+    }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.listview);
@@ -99,6 +116,22 @@ public class MessageActivity extends ListActivity {
     	}
     	return true;
     }
+    
+    public boolean onContextItemSelected(MenuItem aItem)
+    {    	
+    	edu.bellevue.android.blackboard.Message m = messages.get(aItem.getItemId());
+    	
+		Intent i = new Intent(MessageActivity.this,MakePostActivity.class);
+		Bundle extras = getIntent().getExtras();
+		extras.putString("method", "reply");
+		extras.putString("message_id", m.getMessageId());
+		extras.putString("thread_id", m.getThreadId());
+		i.putExtras(extras);
+		startActivityForResult(i, 1);
+		
+		return true;
+    }
+    
 	private List<edu.bellevue.android.blackboard.Message> getAllMessages()
 	{
 		List<edu.bellevue.android.blackboard.Message> msgs = new ArrayList<edu.bellevue.android.blackboard.Message>();
@@ -224,7 +257,6 @@ public class MessageActivity extends ListActivity {
 						int x = getListView().indexOfChild(v); 
 						menu.setHeaderTitle("Options...");
 						menu.add(ContextMenu.NONE,x,ContextMenu.NONE,"Reply...");
-						menu.add(Integer.toString(x));
 					}
 				});
                 return v;

@@ -3,9 +3,13 @@
   xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="App Settings"><CheckBoxPreference android:title="Auto-Login" android:summary="Log in at Startup" android:summaryOn="Disable Auto-Login" android:summaryOff="Enable Auto-Login" android:key="autologin"></CheckBoxPreference>
     
+    </PreferenceCategory><PreferenceCategory android:title="Caching">
+        <CheckBoxPreference android:disableDependentsState="false" android:key="cachedata" android:summary="Allow offline caching of information for faster load times" android:title="Enable Data Caching"></CheckBoxPreference>
+        <ListPreference android:entries="@array/cacheLengthEntries" android:entryValues="@array/cacheLengthValues" android:dependency="cachedata" android:key="cachelength" android:summary="How long data will be cached" android:title="Cache Length"></ListPreference>
     </PreferenceCategory><PreferenceCategory android:title="Credentials">
         <EditTextPreference android:dialogTitle="User Name" android:positiveButtonText="OK" android:title="User Name" android:negativeButtonText="CANCEL" android:key="username" android:dependency="autologin"></EditTextPreference><EditTextPreference android:positiveButtonText="OK" android:negativeButtonText="CANCEL" android:dependency="autologin" android:key="password" android:title="Password" android:dialogTitle="Password"></EditTextPreference>
     </PreferenceCategory><PreferenceCategory android:title="Network Settings"><CheckBoxPreference android:title="Connect on Wifi" android:key="wifi" android:enabled="true" android:defaultValue="true" android:persistent="true"></CheckBoxPreference><CheckBoxPreference android:title="Connect on 3/4G" android:key="mobile" android:enabled="true" android:defaultValue="true" android:persistent="true"></CheckBoxPreference><CheckBoxPreference android:dependency="mobile" android:title="Connect while Roaming" android:key="roaming" android:defaultValue="false" android:persistent="true"></CheckBoxPreference></PreferenceCategory>
+    
     
     
 </PreferenceScreen>

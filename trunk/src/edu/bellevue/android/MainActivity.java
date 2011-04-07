@@ -38,21 +38,42 @@ public class MainActivity extends Activity {
 	private ServiceConnection mConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+	        if (prefs.getBoolean("autologin", false))
+	        {
+	        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
+	    		EditText password = ((EditText)findViewById(R.id.txtPassword));
+	    		userName.setText(prefs.getString("username", ""));
+	    		password.setText(prefs.getString("password", ""));
+	    		
+	    		// call the submit button's click handler :)
+	    		new submitListener().onClick(null);
+	    		
+	        }
 	    }
 
 	    public void onServiceDisconnected(ComponentName className) {
 	        mBoundService = null;
-	        Toast.makeText(MainActivity.this, "Service Disconnected",
-	                Toast.LENGTH_SHORT).show();
+	        
 	    }
 	};
 	
 	
     /** Called when the activity is first created. */
     @Override
+    public void onDestroy()
+    {
+    	super.onDestroy();
+    	unbindService(mConnection);
+    	
+    }
+    public void onResume()
+    {
+    	super.onResume();
+    	bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+    }
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        
+        Toast.makeText(this,"onCreate()",Toast.LENGTH_SHORT).show();
         startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
         
         bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
@@ -72,19 +93,7 @@ public class MainActivity extends Activity {
         
         e.putBoolean("firstRun", false);
         e.commit();
-        // AutoLogin stuff
-        if (prefs.getBoolean("autologin", false))
-        {
-        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
-    		EditText password = ((EditText)findViewById(R.id.txtPassword));
-    		userName.setText(prefs.getString("username", ""));
-    		password.setText(prefs.getString("password", ""));
-    		
-    		// call the submit button's click handler :)
-    		new submitListener().onClick(null);
-    		
-        }
-        
+        // AutoLogin stuff        
     }
      
     public boolean onCreateOptionsMenu(Menu m)

@@ -5,8 +5,8 @@ package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,6 +19,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
@@ -62,14 +63,15 @@ import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
-import android.R;
-import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -106,14 +108,10 @@ public class BlackboardService extends Service {
 			}
 		}, 0, delay);
 	}
-	public void onDestroy()
-	{
-		Toast.makeText(this, "onDestroy()", Toast.LENGTH_SHORT).show();
-	}
+
 	public int onStartCommand(Intent intent, int flags, int startId) {
         // We want this service to continue running until it is explicitly
         // stopped, so return sticky.
-		Toast.makeText(this, "onStartCommand()", Toast.LENGTH_SHORT).show();
         return START_STICKY;
     }
 
@@ -218,6 +216,7 @@ public class BlackboardService extends Service {
 		{ 
         	Log.i(LOGTAG, "Login Succeeded!");
 			_loggedIn = true;
+			this.user_id = userName;
         	
 		}else
 		{
@@ -517,68 +516,100 @@ public class BlackboardService extends Service {
 	}
 	public Message getMessage()
 	{
-		try{
-		TableTag t;
-		TableRow[] rows;
-		Message m;
-
-		String msgUrl = displayUrl + "&message_id="+message_id+"&thread_id="+thread_id;
-
-		httpPost = new HttpPost(msgUrl);
-		httpResponse = client.execute(httpPost);
-		
-		p = new Parser();
-		p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-		
-		nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
-		nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
-		
-		t = (TableTag)(nodeList.elementAt(0));
-		rows = t.getRows();
-		Log.i("foo",msgUrl);
-		
-		// ROW 0 -> Subject Line.
-		TableColumn[] cols = rows[0].getColumns();
-		String subject = cols[0].getStringText().trim().replace("<strong>","").replace("</strong>", "");
-		subject = subject.replace("Subject: ", "");
-		subject = subject.replace("&nbsp;","");
-		subject = "<b>" + subject + "</b>";
-		// Get Author
-		cols = rows[1].getColumns();
-		String author = null;
-		try{
-			author =  ((LinkTag)((cols[0].getChildren().extractAllNodesThatMatch(anchorTagFilter,true)).elementAt(0))).getStringText();
-		}catch (Exception e)
+		Message m = null;
+		m = getMsgFromDb(course_id, message_id, thread_id);
+		if (m != null)
 		{
-			String selfAuthor = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
-			selfAuthor = selfAuthor.substring(selfAuthor.indexOf("Author:") + 7);
-			selfAuthor = selfAuthor.substring(0,selfAuthor.indexOf("<br>"));
-			selfAuthor = selfAuthor.replace("\"", "");
-			author = selfAuthor.replace("</strong>", "").trim();
+			return m;
 		}
-		
-		// Get Posted Date
-		String postedDate = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
-		postedDate = postedDate.substring(postedDate.indexOf("Posted date:") + 12);
-		postedDate = postedDate.substring(0,postedDate.indexOf("<br>"));
-		postedDate = postedDate.replace("</strong>", "").trim();
-		
-		// get actual message
-		nodeList = t.getChildren().extractAllNodesThatMatch(tableTagFilter, true);
-		t = (TableTag)nodeList.elementAt(1);
-		String bodyinfo = null;
-		if (thread_id.equals(message_id))
-		{
-			bodyinfo = t.getRow(0).getColumns()[0].getStringText();
-		}else
-		{
-			bodyinfo = t.getRow(1).getColumns()[0].getStringText();
-		}
-		bodyinfo = "<h5>Body:</h5>"+bodyinfo;
-		postedDate = "<i>" + postedDate + "</i>";
-		m = new Message(subject, postedDate, author, bodyinfo, course_id, conf_id, forum_id, message_id, thread_id);
-		return m;
+		try{
+			TableTag t;
+			TableRow[] rows;
+	
+			String msgUrl = displayUrl + "&message_id="+message_id+"&thread_id="+thread_id;
+	
+			httpPost = new HttpPost(msgUrl);
+			httpResponse = client.execute(httpPost);
+			
+			p = new Parser();
+			p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+			
+			nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
+			nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
+			
+			t = (TableTag)(nodeList.elementAt(0));
+			rows = t.getRows();
+			Log.i("foo",msgUrl);
+			
+			// ROW 0 -> Subject Line.
+			TableColumn[] cols = rows[0].getColumns();
+			String subject = cols[0].getStringText().trim().replace("<strong>","").replace("</strong>", "");
+			subject = subject.replace("Subject: ", "");
+			subject = subject.replace("&nbsp;","");
+			subject = "<b>" + subject + "</b>";
+			// Get Author
+			cols = rows[1].getColumns();
+			String author = null;
+			try{
+				author =  ((LinkTag)((cols[0].getChildren().extractAllNodesThatMatch(anchorTagFilter,true)).elementAt(0))).getStringText();
+			}catch (Exception e)
+			{
+				String selfAuthor = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
+				selfAuthor = selfAuthor.substring(selfAuthor.indexOf("Author:") + 7);
+				selfAuthor = selfAuthor.substring(0,selfAuthor.indexOf("<br>"));
+				selfAuthor = selfAuthor.replace("\"", "");
+				author = selfAuthor.replace("</strong>", "").trim();
+			}
+			
+			// Get Posted Date
+			String postedDate = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
+			postedDate = postedDate.substring(postedDate.indexOf("Posted date:") + 12);
+			postedDate = postedDate.substring(0,postedDate.indexOf("<br>"));
+			postedDate = postedDate.replace("</strong>", "").trim();
+			
+			// get actual message
+			nodeList = t.getChildren().extractAllNodesThatMatch(tableTagFilter, true);
+			t = (TableTag)nodeList.elementAt(1);
+			String bodyinfo = null;
+			if (thread_id.equals(message_id))
+			{
+				bodyinfo = t.getRow(0).getColumns()[0].getStringText();
+			}else
+			{
+				bodyinfo = t.getRow(1).getColumns()[0].getStringText();
+			}
+			bodyinfo = "<h5>Body:</h5>"+bodyinfo;
+			postedDate = "<i>" + postedDate + "</i>";
+			m = new Message(subject, postedDate, author, bodyinfo, course_id, conf_id, forum_id, message_id, thread_id);
+			
+			if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("cachedata", false))
+			{
+				storeMessage(m);
+			}
+			
+			return m;
 		}catch(Exception e){return null;}
+	}
+	public void storeMessage(Message m)
+	{
+		SQLiteDatabase db;
+		db = openDatabase();
+		
+		ContentValues cv = new ContentValues();
+		Calendar cal = Calendar.getInstance();
+		cv.put("storage_date",cal.getTime().getTime());
+		cv.put("course_id",m.getCourseId());
+		cv.put("message_id",m.getMessageId());
+		cv.put("thread_id", m.getThreadId());
+		cv.put("message_data", m.compressForStorage());
+		try
+		{
+			db.beginTransaction();
+				db.insert("Messages",null,cv);
+				db.setTransactionSuccessful();
+			db.endTransaction();
+		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
+		finally{db.close();}
 	}
 	public boolean createNewThread(String subject, String body, String attachedFile)
 	{		
@@ -635,6 +666,69 @@ public class BlackboardService extends Service {
 		}
 		return true;
 	}
+	public boolean createReply(String subject, String body, String attachedFile)
+	{
+		
+		// first we need to get this 'nonce' security thing (Session)
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
+		try {
+			httpResponse = client.execute(httpPost);
+			p = new Parser();
+			p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+			nodeList = p.parse(null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+				
+		nodeList = nodeList.extractAllNodesThatMatch(new HasAttributeFilter("name","blackboard.platform.security.NonceUtil.nonce"), true);
+		String nonceString = ((InputTag)nodeList.elementAt(0)).getAttribute("value");
+
+		
+		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=save&pageLink=list_messages&nav=discussion_board_entry&course_id="+course_id+"&nav=discussion_board_entry");
+		
+		MultipartEntity multi = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+		try{
+		multi.addPart("blackboard.platform.security.NonceUtil.nonce",new StringBody(nonceString));
+		multi.addPart("do",new StringBody("reply"));
+		multi.addPart("inWindow", new StringBody("false"));
+		multi.addPart("strHandle",new StringBody("db_thread_list_entry"));
+		multi.addPart("title",new StringBody(subject));
+		multi.addPart("description.type",new StringBody("H"));
+		multi.addPart("textbox_prefix",new StringBody("description."));
+		multi.addPart("description.text",new StringBody(body));
+		multi.addPart("submit.x",new StringBody("27"));
+		multi.addPart("submit.y",new StringBody("4"));
+		multi.addPart("nav",new StringBody("discussion_board_entry"));
+		multi.addPart("conf_id",new StringBody(conf_id));
+		multi.addPart("do",new StringBody("reply"));
+		multi.addPart("course_id",new StringBody(course_id));
+		multi.addPart("type",new StringBody("message"));
+		multi.addPart("forum_id",new StringBody(forum_id));
+		multi.addPart("message_id",new StringBody(message_id));
+		multi.addPart("thread_id",new StringBody(thread_id));
+		multi.addPart("showParent",new StringBody("false"));
+		if (attachedFile != null)
+		{
+			multi.addPart("attachmentFile",new FileBody(new File(attachedFile)));
+		}
+		}catch(Exception e){}
+		
+		
+
+		httpPost.setEntity(multi);
+		try {
+			httpResponse = client.execute(httpPost);
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
 	public boolean downloadAttachment (String url, String savePath){
 		try
 		{
@@ -671,7 +765,8 @@ public class BlackboardService extends Service {
 		}else
 		{
 			try {
-				InputStream is = getResources().getAssets().open("blackboard.db3");
+				InputStream is = getResources().getAssets().open("blackboard.db");
+				dbFile.getParentFile().mkdirs();
 				dbFile.createNewFile();
 				FileOutputStream fos = new FileOutputStream(dbFile);
 				byte[] buf = new byte[1024];
@@ -679,18 +774,37 @@ public class BlackboardService extends Service {
 				while ((len = is.read(buf)) > 0) {
 					fos.write(buf, 0, len);
 				}
-				
+				return SQLiteDatabase.openOrCreateDatabase(dbFile, null);	
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				return null;
 			}
-			finally{
-				return SQLiteDatabase.openOrCreateDatabase(dbFile, null);
-			}
+			
 		}
 	}
 	
 	// PRIVATE HELPER METHODS
+	
+	private Message getMsgFromDb(String courseid, String mId, String tId) {
+		// TODO Auto-generated method stub
+		SQLiteDatabase db;
+		db = openDatabase();
+		Cursor c = db.query("messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
+		if (c.getCount() > 0)
+		{
+			c.moveToFirst();
+			byte[] blobData = c.getBlob(c.getColumnIndex("message_data"));
+			c.close();
+			db.close();
+			return Message.makeFromCompressedData(blobData);
+		}else{
+			c.close();
+			db.close();
+			return null;
+		}
+	}
+	
 	private HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
     {
 		// This function will create the HttpClient we need to use for blackboard
