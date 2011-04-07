@@ -3,6 +3,7 @@ package edu.bellevue.android;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -52,9 +53,15 @@ public class MakePostActivity extends Activity {
 			((TextView)findViewById(R.id.txtAttachedFile)).setText("Attached: " + attachedFile);
 		}
 	}
+	public void onDestroy()
+	{
+		super.onDestroy();
+		unbindService(mConnection);
+	}
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.messagemaker);
+	    bindService(new Intent(MakePostActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
 	    handler = new MakePostHandler();
 	    EditText bodyText = ((EditText)findViewById(R.id.txtThreadBody));
 	    
@@ -113,9 +120,16 @@ public class MakePostActivity extends Activity {
 		}
 		public void run() {
 			// TODO Auto-generated method stub
-			if (method.equals("createthread"))
+			if (method.equals("newthread"))
 			{
 				mBoundService.createNewThread(subject, body, attachedFile);
+				handler.sendEmptyMessage(0);
+			}else if (method.equals("reply"))
+			{
+				Bundle extras = getIntent().getExtras();
+				mBoundService.setThreadId(extras.getString("thread_id"));
+				mBoundService.setMessageId(extras.getString("message_id"));
+				mBoundService.createReply(subject, body,attachedFile);
 				handler.sendEmptyMessage(0);
 			}
 		}
@@ -136,7 +150,8 @@ public class MakePostActivity extends Activity {
 			}
 			pd.setTitle("Please Wait");
 			pd.show();
-			Thread t = new Thread(new MakePostThread("createthread", subject, body, attachedFile));
+			String curMethod = getIntent().getExtras().getString("method");
+			Thread t = new Thread(new MakePostThread(curMethod, subject, body, attachedFile));
 			t.start();
 		}
 		

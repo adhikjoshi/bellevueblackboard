@@ -63,6 +63,17 @@ public class ThreadActivity extends ListActivity {
 	};
 	/** Called when the activity is first created. */
 	@Override
+    public void onDestroy()
+    {
+    	super.onDestroy();
+    	unbindService(mConnection);
+    	
+    }
+    public void onResume()
+    {
+    	super.onResume();
+    	bindService(new Intent(ThreadActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+    }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.listview);
@@ -73,6 +84,7 @@ public class ThreadActivity extends ListActivity {
 	    bindService(new Intent(ThreadActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
 	    
 	}
+
 	public void onListItemClick(ListView l, View v, int position, long id)
 	{
 		
