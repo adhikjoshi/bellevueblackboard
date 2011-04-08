@@ -91,7 +91,6 @@ public class ThreadActivity extends ListActivity {
 
 	public void onListItemClick(ListView l, View v, int position, long id)
 	{
-		
     	super.onListItemClick(l, v, position, id);
     	if (ConnChecker.shouldConnect(prefs, ctx))
 		{
@@ -142,6 +141,13 @@ public class ThreadActivity extends ListActivity {
     		startActivityForResult(i, 0);
     		
     	}
+    	return true;
+    }
+    public boolean onContextItemSelected(MenuItem mi)
+    {
+    	edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
+    	mBoundService.addThreadToWatch(t);
+    	Toast.makeText(this, Integer.toString(mi.getItemId()), Toast.LENGTH_LONG).show();
     	return true;
     }
 	
@@ -201,6 +207,7 @@ public class ThreadActivity extends ListActivity {
                     LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     v = vi.inflate(R.layout.threadrow, null);
                 }
+                v.setId(position);
                 edu.bellevue.android.blackboard.Thread o = items.get(position);
                 if (o != null) {
                     TextView tt = (TextView) v.findViewById(R.id.toptext);
@@ -220,20 +227,21 @@ public class ThreadActivity extends ListActivity {
     					// TRY USING THE VIEW, AND ITERATE TO FIND THE CORRECT ONE?
     					public void onCreateContextMenu(ContextMenu menu, View v,
     							ContextMenuInfo menuInfo) {
-    						// TODO Auto-generated method stub
-    						int x = getListView().indexOfChild(v); 
+    						// TODO Auto-generated method stub    				 
     						menu.setHeaderTitle("Options...");
-    						menu.add(ContextMenu.NONE,x,ContextMenu.NONE,"Watch This Thread...");
+    						menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Watch Thread...");
     					}
     				});
                     v.setOnClickListener(new OnClickListener() {
 						
 						public void onClick(View v) {
 							// TODO Auto-generated method stub
-							onListItemClick(getListView(), v, getListView().indexOfChild(v), v.getId());
+							v.requestFocus();
+							onListItemClick(getListView(), v, v.getId(), v.getId());
 							
 						}
 					});
+                    
                     return v;
             }
             return v;

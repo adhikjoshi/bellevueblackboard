@@ -1,6 +1,12 @@
 package edu.bellevue.android.blackboard;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class Thread implements Serializable{
 	/**
@@ -31,5 +37,39 @@ public class Thread implements Serializable{
         message_id = messageid;
 	}
 
+	public byte[] compressForStorage()
+	{
+		byte[] compressedData = null;
+		try{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			GZIPOutputStream gz = new GZIPOutputStream(baos);
+		    ObjectOutputStream oos = new ObjectOutputStream(gz);
+		    oos.writeObject(this);
+		    oos.flush();
+		    oos.close();
+		    compressedData = baos.toByteArray();
+		    baos.close();
+		    
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return compressedData;
+	}
+	
+	public static Thread makeFromCompressedData(byte[] compressedData)
+	{
+		try{
+	    ByteArrayInputStream bais = new ByteArrayInputStream(compressedData);
+	    GZIPInputStream gzi = new GZIPInputStream(bais);
+	    ObjectInputStream ois = new ObjectInputStream(gzi);
+	    Thread t = (Thread) ois.readObject();
+	    ois.close();
+	    gzi.close();
+	    bais.close();
+	    return t;
+		}catch (Exception e){e.printStackTrace();}
+		return null;
+	}
 
 }

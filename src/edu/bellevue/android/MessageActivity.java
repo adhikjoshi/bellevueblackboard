@@ -85,7 +85,7 @@ public class MessageActivity extends ListActivity {
     {
     	if (resultCode == 1)
     	{
-    		pd = ProgressDialog.show(this, "Please Wait", "Refreshing Threads...");
+    		pd = ProgressDialog.show(this, "Please Wait", "Refreshing Messages...");
     	    
     	    Thread t = new Thread(new getMessagesThread());
     	    t.start();	
@@ -134,6 +134,16 @@ public class MessageActivity extends ListActivity {
 	private List<edu.bellevue.android.blackboard.Message> getAllMessages()
 	{
 		List<edu.bellevue.android.blackboard.Message> msgs = new ArrayList<edu.bellevue.android.blackboard.Message>();
+		// if we were started from a notification
+			Bundle extras = getIntent().getExtras();
+			if (extras.getBoolean("fromNotification"))
+			{
+				mBoundService.setConfId(extras.getString("conf_id"));
+				mBoundService.setCourseId(extras.getString("course_id"));
+				mBoundService.setForumId(extras.getString("forum_id"));
+				mBoundService.setThreadId(extras.getString("thread_id"));
+				mBoundService.setMessageId(extras.getString("message_id"));
+			}
 		Hashtable <String,String> msgIds = mBoundService.getMessageIds();
 		Message m = new Message();
 		m.what = MSG_UPDATE_STATUS;
