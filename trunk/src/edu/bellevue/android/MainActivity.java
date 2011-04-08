@@ -38,6 +38,11 @@ public class MainActivity extends Activity {
 	private ServiceConnection mConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
+	        if (mBoundService.isLoggedIn())
+	        {
+	        	// switch to Courses view since we're already logged in :)
+	        	handler.sendEmptyMessage(THREAD_COMPLETE);
+	        }
 	        if (prefs.getBoolean("autologin", false))
 	        {
 	        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
@@ -73,7 +78,6 @@ public class MainActivity extends Activity {
     }
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        Toast.makeText(this,"onCreate()",Toast.LENGTH_SHORT).show();
         startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
         
         bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);

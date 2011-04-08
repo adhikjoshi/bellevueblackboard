@@ -5,7 +5,6 @@ package edu.bellevue.android.blackboard;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,8 +62,12 @@ import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -73,7 +76,9 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.Toast;
+import edu.bellevue.android.CourseActivity;
+import edu.bellevue.android.MessageActivity;
+import edu.bellevue.android.R;
 
 /**
  * @author TJ
@@ -83,6 +88,8 @@ public class BlackboardService extends Service {
 	
 	// This stuff is needed for the 'service' part of things
 	// has nothing to do with blackboard really
+	Notification n = null;
+	NotificationManager nm;
 	private final IBinder mBinder = new BlackboardServiceBinder();
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -96,6 +103,7 @@ public class BlackboardService extends Service {
     }
 	public void onCreate()
 	{
+		nm =  (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 		// init keep-alive (every 10 minutes)
 		long delay = 1 * 60 * 1000;
 		Timer t = new Timer();
@@ -121,8 +129,9 @@ public class BlackboardService extends Service {
 					db.endTransaction();
 				}
 				
+				checkWatchedThreads();
 			}
-		}, 0, delay);
+		}, 60 * 1000, delay);
 	}
 
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -472,7 +481,6 @@ public class BlackboardService extends Service {
 	}	
 	public Hashtable<String,String> getMessageIds()
 	{
-		
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
 		
 		//load site that contains all replies, use this to get the IDs we need to get the details.
@@ -606,26 +614,9 @@ public class BlackboardService extends Service {
 			return m;
 		}catch(Exception e){return null;}
 	}
-	public void storeMessage(Message m)
+	public void addThreadToWatch(Thread t)
 	{
-		SQLiteDatabase db;
-		db = openDatabase();
-		
-		ContentValues cv = new ContentValues();
-		Calendar cal = Calendar.getInstance();
-		cv.put("storage_date",cal.getTime().getTime());
-		cv.put("course_id",m.getCourseId());
-		cv.put("message_id",m.getMessageId());
-		cv.put("thread_id", m.getThreadId());
-		cv.put("message_data", m.compressForStorage());
-		try
-		{
-			db.beginTransaction();
-				db.insert("Messages",null,cv);
-				db.setTransactionSuccessful();
-			db.endTransaction();
-		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
-		finally{db.close();}
+		storeThread(t);
 	}
 	public boolean createNewThread(String subject, String body, String attachedFile)
 	{		
@@ -801,7 +792,97 @@ public class BlackboardService extends Service {
 	}
 	
 	// PRIVATE HELPER METHODS
-	
+	private void checkWatchedThreads()
+	{
+		SQLiteDatabase db = openDatabase();
+		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
+		if (c.getCount() > 0)
+		{
+			c.moveToFirst();
+			for (int x = 0; x < c.getCount(); x++)
+			{
+				byte[] blobData = c.getBlob(c.getColumnIndex("thread_data"));
+				Thread t = Thread.makeFromCompressedData(blobData);
+				setCourseId(t.course_id);
+				setForumId(t.forum_id);
+				setConfId(t.conf_id);
+				setThreadId(t.message_id);
+				setMessageId(t.message_id);
+				int postCount = getMessageIds().size();
+				if (postCount > Integer.parseInt(t.pCount))
+				{
+					// make a notification
+					n = new Notification(R.drawable.icon,"Discussion Thread Updated",System.currentTimeMillis());
+					n.defaults |= Notification.DEFAULT_SOUND;
+					n.flags |= Notification.FLAG_AUTO_CANCEL;
+					Context context = getApplicationContext();
+					CharSequence contentTitle = "Thread Updated";
+					CharSequence contentText = Integer.toString(postCount - Integer.parseInt(t.pCount)) + " New Post(s)";
+					Intent ni = new Intent(BlackboardService.this, MessageActivity.class);
+					ni.putExtra("name", t.threadName);
+					ni.putExtra("fromNotification", true);
+					ni.putExtra("conf_id", t.conf_id);
+					ni.putExtra("course_id", t.course_id);
+					ni.putExtra("forum_id", t.forum_id);
+					ni.putExtra("thread_id", t.message_id);
+					ni.putExtra("message_id", t.message_id);
+					PendingIntent contentIntent = PendingIntent.getActivity(BlackboardService.this, 0, ni, 0);
+					
+					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
+					nm.notify(1, n);
+					
+					// update our stored thread
+					ContentValues cv = new ContentValues();
+					t.pCount = Integer.toString(postCount);
+					cv.put("thread_data", t.compressForStorage());
+					db.update("Threads", cv, "thread_id='"+t.message_id+"'", null);
+				}
+				c.moveToNext();
+			}
+		}
+		db.close();
+	}
+	private void storeMessage(Message m)
+	{
+		SQLiteDatabase db;
+		db = openDatabase();
+		
+		ContentValues cv = new ContentValues();
+		Calendar cal = Calendar.getInstance();
+		cv.put("storage_date",cal.getTime().getTime());
+		cv.put("course_id",m.getCourseId());
+		cv.put("message_id",m.getMessageId());
+		cv.put("thread_id", m.getThreadId());
+		cv.put("message_data", m.compressForStorage());
+		try
+		{
+			db.beginTransaction();
+				db.insert("Messages",null,cv);
+				db.setTransactionSuccessful();
+			db.endTransaction();
+		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
+		finally{db.close();}
+	}
+	private void storeThread(Thread t)
+	{
+		SQLiteDatabase db;
+		db = openDatabase();
+		
+		ContentValues cv = new ContentValues();
+		
+		cv.put("thread_id", t.message_id);
+		cv.put("user_id",user_id);
+		cv.put("last_count",t.pCount);
+		cv.put("thread_data", t.compressForStorage());
+		try
+		{
+			db.beginTransaction();
+				db.insert("Threads",null,cv);
+				db.setTransactionSuccessful();
+			db.endTransaction();
+		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
+		finally{db.close();}	
+	}
 	private Message getMsgFromDb(String courseid, String mId, String tId) {
 		// TODO Auto-generated method stub
 		SQLiteDatabase db;
