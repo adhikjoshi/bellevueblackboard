@@ -97,14 +97,30 @@ public class BlackboardService extends Service {
 	public void onCreate()
 	{
 		// init keep-alive (every 10 minutes)
-		long delay = 10 * 60 * 1000;
+		long delay = 1 * 60 * 1000;
 		Timer t = new Timer();
 		t.scheduleAtFixedRate(new TimerTask() {
 			
 			@Override
 			public void run() {
 				// Do something to keep our session valid
+				// here is where we will eventually do the thread 'watching'
 				getCourses();
+				
+				SQLiteDatabase db = openDatabase();
+				int numWeeks = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(BlackboardService.this).getString("cachelength", "-1"));
+				if (numWeeks > 0)
+				{
+					Calendar cal = Calendar.getInstance();
+					cal.add(Calendar.DAY_OF_YEAR, (-14) * numWeeks);
+				
+					Long expirationDate = cal.getTime().getTime();
+				
+					db.beginTransaction();
+						db.delete("Messages", "storage_date <= " + Long.toString(expirationDate), null);
+					db.endTransaction();
+				}
+				
 			}
 		}, 0, delay);
 	}
@@ -790,7 +806,7 @@ public class BlackboardService extends Service {
 		// TODO Auto-generated method stub
 		SQLiteDatabase db;
 		db = openDatabase();
-		Cursor c = db.query("messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
+		Cursor c = db.query("Messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
 			c.moveToFirst();
