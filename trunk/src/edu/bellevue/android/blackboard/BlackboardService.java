@@ -69,11 +69,14 @@ import android.app.Service;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import edu.bellevue.android.MessageActivity;
@@ -604,6 +607,10 @@ public class BlackboardService extends Service {
 	{
 		storeThread(t);
 	}
+	public void removeThreadFromWatch(Thread t)
+	{
+		removeThread(t);
+	}
 	public boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)
 	{		
 		shouldPerformBackgroundCheck = false;
@@ -767,7 +774,8 @@ public class BlackboardService extends Service {
 		}else
 		{
 			try {
-				InputStream is = getResources().getAssets().open("blackboard.db");
+				AssetManager am = getAssets();
+				InputStream is = am.open("blackboard.db");
 				dbFile.getParentFile().mkdirs();
 				dbFile.createNewFile();
 				FileOutputStream fos = new FileOutputStream(dbFile);
@@ -781,11 +789,27 @@ public class BlackboardService extends Service {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return null;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				
+				return null;
 			}
 			
 		}
 	}
-	
+	public boolean isThreadWatched(Thread t)
+	{
+		Cursor c = db.query("Threads", new String[]{"thread_id"}, "thread_id='"+t.thread_id+"'", null, null, null, null);
+		if (c.getCount() > 0)
+		{
+			c.close();
+			return true;
+		}else{
+			c.close();
+			return false;
+		}
+	}
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
 	{
@@ -806,6 +830,7 @@ public class BlackboardService extends Service {
 					// make a notification
 					n = new Notification(R.drawable.icon,"Discussion Thread Updated",System.currentTimeMillis());
 					n.defaults |= Notification.DEFAULT_SOUND;
+					n.defaults |= Notification.DEFAULT_VIBRATE;
 					n.flags |= Notification.FLAG_AUTO_CANCEL;
 					Context context = getApplicationContext();
 					CharSequence contentTitle = "Thread Updated";
@@ -822,12 +847,15 @@ public class BlackboardService extends Service {
 					
 					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
 					nm.notify(1, n);
-					
 					// update our stored thread
 					ContentValues cv = new ContentValues();
 					t.pCount = Integer.toString(postCount);
+					cv.put("last_count", postCount);
 					cv.put("thread_data", t.compressForStorage());
-					db.update("Threads", cv, "thread_id='"+t.thread_id+"'", null);
+					db.beginTransaction();
+						db.update("Threads", cv, "thread_id='"+t.thread_id+"'", null);
+						db.setTransactionSuccessful();
+					db.endTransaction();
 				}
 				c.moveToNext();
 			}
@@ -868,6 +896,15 @@ public class BlackboardService extends Service {
 		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
 		finally{}	
 	}
+	private void removeThread(Thread t)
+	{
+		db.beginTransaction();
+			try{
+				db.delete("Threads", "thread_id='" + t.thread_id + "'", null);
+				db.setTransactionSuccessful();
+			}catch(Exception e){}
+		db.endTransaction();
+	}
 	private Message getMsgFromDb(String courseid, String mId, String tId) {
 		// TODO Auto-generated method stub
 		Cursor c = db.query("Messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
@@ -876,7 +913,6 @@ public class BlackboardService extends Service {
 			c.moveToFirst();
 			byte[] blobData = c.getBlob(c.getColumnIndex("message_data"));
 			c.close();
-			
 			return Message.makeFromCompressedData(blobData);
 		}else{
 			c.close();

@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -149,9 +150,20 @@ public class ThreadActivity extends ListActivity {
     }
     public boolean onContextItemSelected(MenuItem mi)
     {
-    	edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
-    	mBoundService.addThreadToWatch(t);
-    	Toast.makeText(this, Integer.toString(mi.getItemId()), Toast.LENGTH_LONG).show();
+    	if (mi.getTitle().equals("Watch This Thread"))
+    	{
+	    	edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
+	    	mBoundService.addThreadToWatch(t);
+	    	TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
+	    	tv.setTextColor(Color.RED);
+    	}else
+    	{
+    		// unwatch thread
+    		edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
+    		mBoundService.removeThreadFromWatch(t);
+    		TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
+	    	tv.setTextColor(Color.WHITE);
+    	}
     	return true;
     }
 	
@@ -216,11 +228,20 @@ public class ThreadActivity extends ListActivity {
                 edu.bellevue.android.blackboard.Thread o = items.get(position);
                 if (o != null) {
                     TextView tt = (TextView) v.findViewById(R.id.toptext);
-                    
                     TextView mt = (TextView) v.findViewById(R.id.middletext);
                     TextView bt = (TextView) v.findViewById(R.id.bottomtext);
+                    
                     if (tt != null) {
-                          tt.setText(o.threadName); 
+                        tt.setText(o.threadName);
+                        if (mBoundService.isThreadWatched(o))
+                        {
+                        	tt.setTextColor(Color.RED);
+
+                        }else
+                        {
+                        	tt.setTextColor(Color.WHITE);
+                        }
+                        
                     }
                     if (mt != null) {
                     	mt.setText("By: " + o.threadAuthor + " On: "+o.threadDate);
@@ -234,7 +255,13 @@ public class ThreadActivity extends ListActivity {
     							ContextMenuInfo menuInfo) {
     						// TODO Auto-generated method stub    				 
     						menu.setHeaderTitle("Options...");
-    						menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Watch Thread...");
+    						if (!mBoundService.isThreadWatched(threads.get(v.getId())))
+    						{
+    							menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Watch This Thread");
+    						}else
+    						{
+    							menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Stop Watching Thread");
+    						}
     					}
     				});
                     v.setOnClickListener(new OnClickListener() {
