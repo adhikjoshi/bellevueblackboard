@@ -161,11 +161,6 @@ public class BlackboardService extends Service {
 	
 	//variables for Properties
 	private boolean _loggedIn = false;
-	private String course_id = null;
-	private String forum_id = null;
-	private String conf_id = null;
-	private String thread_id = null;
-	private String message_id = null;
 	private String user_id = null;
 	
 	// variables used throughout 
@@ -180,32 +175,6 @@ public class BlackboardService extends Service {
 	private TagNameFilter anchorTagFilter = new TagNameFilter("a");
 	private TagNameFilter spanTagFilter = new TagNameFilter("span");
 	private TagNameFilter scriptTagFilter = new TagNameFilter("script");
-	
-	// SETTER METHODS
-	public  void setCourseId(String courseId){
-		course_id = courseId;
-		forum_id = null;
-		conf_id = null;
-		thread_id = null;
-		message_id = null;
-	}
-	public void setForumId(String forumId){
-		forum_id = forumId;
-		thread_id = null;
-		message_id = null;
-	}
-	public void setConfId(String confId){
-		conf_id = confId;
-		thread_id = null;
-		message_id = null;
-	}
-	public void setThreadId(String threadId){
-		thread_id = threadId;
-		message_id = null;
-	}
-	public void setMessageId(String messageId){
-		message_id = messageId;
-	}
 
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public boolean logIn(String userName, String password)
@@ -303,7 +272,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return courses;
 	}
-	public List<Forum> getForums()
+	public List<Forum> getForums(String course_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Forum> forums = new ArrayList<Forum>();
@@ -367,15 +336,15 @@ public class BlackboardService extends Service {
 				myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
 				
-				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
-				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
+				String confid = theURL.substring(theURL.indexOf("conf_id=")+8);
+				confid = confid.substring(0,confid.indexOf("&"));
 				
-				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
+				String forumid = theURL.substring(theURL.indexOf("forum_id=")+9);
 				
-				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
-				course_id = course_id.substring(0,course_id.indexOf("&"));
+				String courseid = theURL.substring(theURL.indexOf("course_id=")+10);
+				courseid = courseid.substring(0,courseid.indexOf("&"));
 				
-				Forum f = new Forum(forumName,pCount,uCount,course_id,conf_id,forum_id);
+				Forum f = new Forum(forumName,pCount,uCount,courseid,confid,forumid);
 				forums.add(f);
 			}			
 		}catch(Exception e){e.printStackTrace(); forums = null;}
@@ -383,7 +352,7 @@ public class BlackboardService extends Service {
 		return forums;
 		
 	}
-	public List<Thread> getThreads()
+	public List<Thread> getThreads(String course_id, String forum_id, String conf_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Thread> threads = new ArrayList<Thread>();
@@ -473,18 +442,18 @@ public class BlackboardService extends Service {
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
 				
-				String conf_id = theURL.substring(theURL.indexOf("conf_id=")+8);
-				conf_id = conf_id.substring(0,conf_id.indexOf("&"));
+				String confid = theURL.substring(theURL.indexOf("conf_id=")+8);
+				confid = confid.substring(0,confid.indexOf("&"));
 				
-				String forum_id = theURL.substring(theURL.indexOf("forum_id=")+9);
-				forum_id = forum_id.substring(0,forum_id.indexOf("&"));
+				String forumid = theURL.substring(theURL.indexOf("forum_id=")+9);
+				forumid = forumid.substring(0,forumid.indexOf("&"));
 				
-				String course_id = theURL.substring(theURL.indexOf("course_id=")+10);
-				course_id = course_id.substring(0,course_id.indexOf("&"));
+				String courseid = theURL.substring(theURL.indexOf("course_id=")+10);
+				courseid = courseid.substring(0,courseid.indexOf("&"));
 				
-				String message_id = theURL.substring(theURL.indexOf("message_id=")+11);
+				String messageid = theURL.substring(theURL.indexOf("message_id=")+11);
 				
-				Thread t = new Thread(threadName,threadDate,threadAuthor,pCount,uCount,course_id,conf_id,forum_id,message_id);
+				Thread t = new Thread(threadName,threadDate,threadAuthor,pCount,uCount,courseid,confid,forumid,messageid);
 				
 				threads.add(t);
 			}			
@@ -493,7 +462,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return threads;
 	}	
-	public Hashtable<String,String> getMessageIds()
+	public Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
@@ -502,7 +471,7 @@ public class BlackboardService extends Service {
 		try
 		{
 			// we need to get the URL for the message tree.
-			String str = String.format(MESSAGES_URL,forum_id,course_id,conf_id,message_id);
+			String str = String.format(MESSAGES_URL,forum_id,course_id,conf_id,thread_id);
 	        httpPost = new HttpPost(str);
 	        httpResponse = client.execute(httpPost);	
 	        
@@ -554,7 +523,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return msgIds;
 	}
-	public Message getMessage()
+	public Message getMessage(String course_id, String forum_id, String conf_id, String thread_id, String message_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		Message m = null;
@@ -635,7 +604,7 @@ public class BlackboardService extends Service {
 	{
 		storeThread(t);
 	}
-	public boolean createNewThread(String subject, String body, String attachedFile)
+	public boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)
 	{		
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session?)
@@ -692,7 +661,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return true;
 	}
-	public boolean createReply(String subject, String body, String attachedFile)
+	public boolean createReply(String course_id, String forum_id, String conf_id, String thread_id, String message_id, String subject, String body, String attachedFile)
 	{
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session)
@@ -821,11 +790,6 @@ public class BlackboardService extends Service {
 	private void checkWatchedThreads()
 	{
 		String oldCourseId, oldForumId, oldConfId, oldThreadId, oldMessageId;
-		oldCourseId = course_id;
-		oldForumId = forum_id;
-		oldConfId = conf_id;
-		oldThreadId = thread_id;
-		oldMessageId = message_id;
 		
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
@@ -835,12 +799,8 @@ public class BlackboardService extends Service {
 			{
 				byte[] blobData = c.getBlob(c.getColumnIndex("thread_data"));
 				Thread t = Thread.makeFromCompressedData(blobData);
-				setCourseId(t.course_id);
-				setForumId(t.forum_id);
-				setConfId(t.conf_id);
-				setThreadId(t.message_id);
-				setMessageId(t.message_id);
-				int postCount = getMessageIds().size();
+
+				int postCount = getMessageIds(t.forum_id,t.course_id,t.conf_id,t.thread_id).size();
 				if (postCount > Integer.parseInt(t.pCount))
 				{
 					// make a notification
@@ -856,8 +816,8 @@ public class BlackboardService extends Service {
 					ni.putExtra("conf_id", t.conf_id);
 					ni.putExtra("course_id", t.course_id);
 					ni.putExtra("forum_id", t.forum_id);
-					ni.putExtra("thread_id", t.message_id);
-					ni.putExtra("message_id", t.message_id);
+					ni.putExtra("thread_id", t.thread_id);
+					ni.putExtra("message_id", t.thread_id);
 					PendingIntent contentIntent = PendingIntent.getActivity(BlackboardService.this, 0, ni, 0);
 					
 					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
@@ -867,16 +827,11 @@ public class BlackboardService extends Service {
 					ContentValues cv = new ContentValues();
 					t.pCount = Integer.toString(postCount);
 					cv.put("thread_data", t.compressForStorage());
-					db.update("Threads", cv, "thread_id='"+t.message_id+"'", null);
+					db.update("Threads", cv, "thread_id='"+t.thread_id+"'", null);
 				}
 				c.moveToNext();
 			}
 		}
-		setCourseId(oldCourseId);
-		setForumId(oldForumId);
-		setConfId(oldConfId);
-		setThreadId(oldThreadId);
-		setMessageId(oldMessageId);
 	}
 	private void storeMessage(Message m)
 	{		
@@ -900,7 +855,7 @@ public class BlackboardService extends Service {
 	{
 		ContentValues cv = new ContentValues();
 		
-		cv.put("thread_id", t.message_id);
+		cv.put("thread_id", t.thread_id);
 		cv.put("user_id",user_id);
 		cv.put("last_count",t.pCount);
 		cv.put("thread_data", t.compressForStorage());

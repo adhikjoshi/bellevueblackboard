@@ -122,14 +122,13 @@ public class MakePostActivity extends Activity {
 			// TODO Auto-generated method stub
 			if (method.equals("newthread"))
 			{
-				mBoundService.createNewThread(subject, body, attachedFile);
+				Bundle extras = getIntent().getExtras();
+				mBoundService.createNewThread(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),subject, body, attachedFile);
 				handler.sendEmptyMessage(0);
 			}else if (method.equals("reply"))
 			{
 				Bundle extras = getIntent().getExtras();
-				mBoundService.setThreadId(extras.getString("thread_id"));
-				mBoundService.setMessageId(extras.getString("message_id"));
-				mBoundService.createReply(subject, body,attachedFile);
+				mBoundService.createReply(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),extras.getString("thread_id"),extras.getString("message_id"),subject, body,attachedFile);
 				handler.sendEmptyMessage(0);
 			}
 		}

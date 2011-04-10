@@ -20,11 +20,11 @@ public class Thread implements Serializable{
 	public String course_id;
 	public String conf_id;
 	public String forum_id;
-	public String message_id;
+	public String thread_id;
 	public String pCount;
 	public String uCount;
 	
-	public Thread(String name, String date, String author, String postCount, String unreadCount, String course, String conf, String forum, String messageid)
+	public Thread(String name, String date, String author, String postCount, String unreadCount, String course, String conf, String forum, String threadid)
 	{
 		threadName = name.replace("&nbsp;","");
 		threadDate = date;
@@ -34,7 +34,7 @@ public class Thread implements Serializable{
 		course_id = course;
         conf_id = conf;
         forum_id = forum;
-        message_id = messageid;
+        thread_id = threadid;
 	}
 
 	public byte[] compressForStorage()
