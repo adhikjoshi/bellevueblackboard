@@ -32,7 +32,6 @@ import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.bellevue.android.ThreadActivity.getThreadsThread;
 import edu.bellevue.android.blackboard.BlackboardService;
 import edu.bellevue.android.blackboard.MessageComparator;
 

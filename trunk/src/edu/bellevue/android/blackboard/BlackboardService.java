@@ -76,7 +76,6 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import edu.bellevue.android.CourseActivity;
 import edu.bellevue.android.MessageActivity;
 import edu.bellevue.android.R;
 
@@ -88,6 +87,7 @@ public class BlackboardService extends Service {
 	
 	// This stuff is needed for the 'service' part of things
 	// has nothing to do with blackboard really
+	boolean shouldPerformBackgroundCheck = true;
 	Notification n = null;
 	NotificationManager nm;
 	private final IBinder mBinder = new BlackboardServiceBinder();
@@ -101,6 +101,10 @@ public class BlackboardService extends Service {
             return BlackboardService.this;
         }
     }
+    public void onDestroy()
+    {
+    	db.close();
+    }
 	public void onCreate()
 	{
 		nm =  (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
@@ -111,11 +115,14 @@ public class BlackboardService extends Service {
 			
 			@Override
 			public void run() {
+				if (shouldPerformBackgroundCheck == false)
+				{
+					return;
+				}
 				// Do something to keep our session valid
 				// here is where we will eventually do the thread 'watching'
 				getCourses();
 				
-				SQLiteDatabase db = openDatabase();
 				int numWeeks = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(BlackboardService.this).getString("cachelength", "-1"));
 				if (numWeeks > 0)
 				{
@@ -167,7 +174,7 @@ public class BlackboardService extends Service {
 	private HttpPost httpPost = null;
 	private NodeList nodeList;
 	private Parser p = new Parser();
-	
+	private SQLiteDatabase db = openDatabase();
 	// FILTERS USED FOR PARSING
 	private TagNameFilter tableTagFilter = new TagNameFilter("table");
 	private TagNameFilter anchorTagFilter = new TagNameFilter("a");
@@ -203,6 +210,7 @@ public class BlackboardService extends Service {
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public boolean logIn(String userName, String password)
 	{
+		shouldPerformBackgroundCheck = false;
 		Log.i(LOGTAG,"Loggin in with User: " + userName + " and Pass: xxxxx");
 		try{
 
@@ -255,6 +263,7 @@ public class BlackboardService extends Service {
 			e.printStackTrace();
 			_loggedIn = false;
 		}
+		shouldPerformBackgroundCheck = true;
 		return _loggedIn;
 	}
 	public boolean isLoggedIn()
@@ -263,6 +272,7 @@ public class BlackboardService extends Service {
 	}
 	public List<Course> getCourses()
 	{
+		shouldPerformBackgroundCheck = false;
 		List<Course> courses = new ArrayList<Course>();
 		try
 		{
@@ -290,10 +300,12 @@ public class BlackboardService extends Service {
 		{
 			System.gc();
 		}
+		shouldPerformBackgroundCheck = true;
 		return courses;
 	}
 	public List<Forum> getForums()
 	{
+		shouldPerformBackgroundCheck = false;
 		List<Forum> forums = new ArrayList<Forum>();
 		try
 		{
@@ -367,12 +379,13 @@ public class BlackboardService extends Service {
 				forums.add(f);
 			}			
 		}catch(Exception e){e.printStackTrace(); forums = null;}
-		
+		shouldPerformBackgroundCheck = true;
 		return forums;
 		
 	}
 	public List<Thread> getThreads()
 	{
+		shouldPerformBackgroundCheck = false;
 		List<Thread> threads = new ArrayList<Thread>();
 		try
 		{			
@@ -477,10 +490,12 @@ public class BlackboardService extends Service {
 			}			
 	        
 		}catch(Exception e){e.printStackTrace();}
+		shouldPerformBackgroundCheck = true;
 		return threads;
 	}	
 	public Hashtable<String,String> getMessageIds()
 	{
+		shouldPerformBackgroundCheck = false;
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
 		
 		//load site that contains all replies, use this to get the IDs we need to get the details.
@@ -536,10 +551,12 @@ public class BlackboardService extends Service {
 				msgIds.put(href.substring(href.indexOf(",")+1),href.substring(0,href.indexOf(",")));
 			}
 		}catch(Exception e){}
+		shouldPerformBackgroundCheck = true;
 		return msgIds;
 	}
 	public Message getMessage()
 	{
+		shouldPerformBackgroundCheck = false;
 		Message m = null;
 		m = getMsgFromDb(course_id, message_id, thread_id);
 		if (m != null)
@@ -610,7 +627,7 @@ public class BlackboardService extends Service {
 			{
 				storeMessage(m);
 			}
-			
+			shouldPerformBackgroundCheck = true;
 			return m;
 		}catch(Exception e){return null;}
 	}
@@ -620,6 +637,7 @@ public class BlackboardService extends Service {
 	}
 	public boolean createNewThread(String subject, String body, String attachedFile)
 	{		
+		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session?)
 		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
 		try {
@@ -671,11 +689,12 @@ public class BlackboardService extends Service {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		shouldPerformBackgroundCheck = true;
 		return true;
 	}
 	public boolean createReply(String subject, String body, String attachedFile)
 	{
-		
+		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session)
 		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
 		try {
@@ -733,10 +752,12 @@ public class BlackboardService extends Service {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		shouldPerformBackgroundCheck = true;
 		return true;
 	}
 	
 	public boolean downloadAttachment (String url, String savePath){
+		shouldPerformBackgroundCheck = false;
 		try
 		{
 			httpPost = new HttpPost(url);
@@ -756,8 +777,13 @@ public class BlackboardService extends Service {
 	        }
 	        fos.close();
 	        is.close();
+	        shouldPerformBackgroundCheck = true;
 	        return true;
-		}catch (Exception e){return false;}
+		}catch (Exception e){
+			shouldPerformBackgroundCheck = true;
+			return false;
+		}
+		
 	}
 	
 	// Database Methods
@@ -794,7 +820,13 @@ public class BlackboardService extends Service {
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
 	{
-		SQLiteDatabase db = openDatabase();
+		String oldCourseId, oldForumId, oldConfId, oldThreadId, oldMessageId;
+		oldCourseId = course_id;
+		oldForumId = forum_id;
+		oldConfId = conf_id;
+		oldThreadId = thread_id;
+		oldMessageId = message_id;
+		
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
@@ -840,13 +872,14 @@ public class BlackboardService extends Service {
 				c.moveToNext();
 			}
 		}
-		db.close();
+		setCourseId(oldCourseId);
+		setForumId(oldForumId);
+		setConfId(oldConfId);
+		setThreadId(oldThreadId);
+		setMessageId(oldMessageId);
 	}
 	private void storeMessage(Message m)
-	{
-		SQLiteDatabase db;
-		db = openDatabase();
-		
+	{		
 		ContentValues cv = new ContentValues();
 		Calendar cal = Calendar.getInstance();
 		cv.put("storage_date",cal.getTime().getTime());
@@ -861,13 +894,10 @@ public class BlackboardService extends Service {
 				db.setTransactionSuccessful();
 			db.endTransaction();
 		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
-		finally{db.close();}
+		finally{}
 	}
 	private void storeThread(Thread t)
 	{
-		SQLiteDatabase db;
-		db = openDatabase();
-		
 		ContentValues cv = new ContentValues();
 		
 		cv.put("thread_id", t.message_id);
@@ -881,23 +911,20 @@ public class BlackboardService extends Service {
 				db.setTransactionSuccessful();
 			db.endTransaction();
 		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
-		finally{db.close();}	
+		finally{}	
 	}
 	private Message getMsgFromDb(String courseid, String mId, String tId) {
 		// TODO Auto-generated method stub
-		SQLiteDatabase db;
-		db = openDatabase();
 		Cursor c = db.query("Messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
 			c.moveToFirst();
 			byte[] blobData = c.getBlob(c.getColumnIndex("message_data"));
 			c.close();
-			db.close();
+			
 			return Message.makeFromCompressedData(blobData);
 		}else{
 			c.close();
-			db.close();
 			return null;
 		}
 	}
