@@ -134,16 +134,8 @@ public class MessageActivity extends ListActivity {
 	{
 		List<edu.bellevue.android.blackboard.Message> msgs = new ArrayList<edu.bellevue.android.blackboard.Message>();
 		// if we were started from a notification
-			Bundle extras = getIntent().getExtras();
-			if (extras.getBoolean("fromNotification"))
-			{
-				mBoundService.setConfId(extras.getString("conf_id"));
-				mBoundService.setCourseId(extras.getString("course_id"));
-				mBoundService.setForumId(extras.getString("forum_id"));
-				mBoundService.setThreadId(extras.getString("thread_id"));
-				mBoundService.setMessageId(extras.getString("message_id"));
-			}
-		Hashtable <String,String> msgIds = mBoundService.getMessageIds();
+		Bundle extras = getIntent().getExtras();
+		Hashtable <String,String> msgIds = mBoundService.getMessageIds(extras.getString("forum_id"),extras.getString("course_id"),extras.getString("conf_id"),extras.getString("thread_id"));
 		Message m = new Message();
 		m.what = MSG_UPDATE_STATUS;
 		m.arg1 = msgIds.size();
@@ -153,11 +145,7 @@ public class MessageActivity extends ListActivity {
 		{
 			String mId = keyEnum.nextElement();
 			String tId = msgIds.get(mId);
-			// TESTING //
-			mBoundService.setThreadId(tId);
-			// END TESTING //
-			mBoundService.setMessageId(mId);
-			msgs.add(mBoundService.getMessage());
+			msgs.add(mBoundService.getMessage(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),tId,mId));
 			handler.sendEmptyMessage(MSG_INCREMENT_COUNT);
 		}
 		//end debug stuff//

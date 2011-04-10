@@ -48,9 +48,6 @@ public class ThreadActivity extends ListActivity {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
 	        Bundle extras = getIntent().getExtras();
-	        mBoundService.setCourseId(extras.getString("course_id"));
-	        mBoundService.setConfId(extras.getString("conf_id"));
-	        mBoundService.setForumId(extras.getString("forum_id"));
 		    friendlyName = extras.getString("name");
 		    
 		    setTitle(friendlyName + " - Threads");
@@ -95,10 +92,13 @@ public class ThreadActivity extends ListActivity {
     	if (ConnChecker.shouldConnect(prefs, ctx))
 		{
         	edu.bellevue.android.blackboard.Thread t = (edu.bellevue.android.blackboard.Thread)threads.get(position);
-        	mBoundService.setThreadId(t.message_id);
-        	mBoundService.setMessageId(t.message_id);
         	Intent i = new Intent(ThreadActivity.this,MessageActivity.class);
         	i.putExtra("name", t.threadName);
+        	i.putExtra("course_id", t.course_id);
+        	i.putExtra("forum_id", t.forum_id);
+        	i.putExtra("conf_id", t.conf_id);
+        	i.putExtra("thread_id", t.thread_id);
+        	i.putExtra("message_id", t.thread_id);
         	startActivity(i);
 		}else
 		{
@@ -138,6 +138,10 @@ public class ThreadActivity extends ListActivity {
     	{
     		Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
     		i.putExtra("method", "newthread");
+    		Bundle extras = getIntent().getExtras();
+    		i.putExtra("course_id", extras.getString("course_id"));
+    		i.putExtra("forum_id", extras.getString("forum_id"));
+    		i.putExtra("conf_id", extras.getString("conf_id"));    		
     		startActivityForResult(i, 0);
     		
     	}
@@ -177,7 +181,8 @@ public class ThreadActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				threads = mBoundService.getThreads();
+				Bundle extras = getIntent().getExtras();
+				threads = mBoundService.getThreads(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"));
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{

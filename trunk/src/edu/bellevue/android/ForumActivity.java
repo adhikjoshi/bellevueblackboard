@@ -44,7 +44,6 @@ public class ForumActivity extends ListActivity {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
 	        Bundle extras = ForumActivity.this.getIntent().getExtras();
-		    mBoundService.setCourseId(extras.getString("course_id"));
 		    friendlyName = extras.getString("name");
 		    setTitle(friendlyName + " - Forums");
 		    pd = ProgressDialog.show(ForumActivity.this, "Please Wait", "Loading Forums...");
@@ -136,7 +135,8 @@ public class ForumActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				forums = mBoundService.getForums();
+				Bundle extras = getIntent().getExtras();
+				forums = mBoundService.getForums(extras.getString("course_id"));
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
