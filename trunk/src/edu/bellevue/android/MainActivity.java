@@ -37,7 +37,6 @@ public class MainActivity extends Activity {
 	
 	private ServiceConnection mConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
-	    	getAssets();
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
 	        if (mBoundService.isLoggedIn())
 	        {
