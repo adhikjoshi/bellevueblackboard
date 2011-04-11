@@ -1,5 +1,9 @@
 package edu.bellevue.android;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -11,7 +15,10 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.AssetManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -77,6 +84,7 @@ public class MainActivity extends Activity {
     	bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
     }
     public void onCreate(Bundle savedInstanceState){
+    	ensureDBExists();
         super.onCreate(savedInstanceState);
         startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
         
@@ -100,7 +108,29 @@ public class MainActivity extends Activity {
         // AutoLogin stuff        
     }
      
-    public boolean onCreateOptionsMenu(Menu m)
+    private void ensureDBExists() 
+    {
+    	File dbFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/blackboard/database.db3");
+    	if (!dbFile.exists())
+    	{
+			try {
+				AssetManager am = getResources().getAssets();
+				InputStream is = am.open("blackboard.db");
+				dbFile.getParentFile().mkdirs();
+				dbFile.createNewFile();
+				FileOutputStream fos = new FileOutputStream(dbFile);
+				byte[] buf = new byte[1024];
+				int len;
+				while ((len = is.read(buf)) > 0) {
+					fos.write(buf, 0, len);
+				}	
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+	}
+	public boolean onCreateOptionsMenu(Menu m)
     {
     	m.add("Settings");
     	return super.onCreateOptionsMenu(m);
