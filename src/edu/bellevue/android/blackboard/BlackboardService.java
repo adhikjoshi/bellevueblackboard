@@ -124,7 +124,7 @@ public class BlackboardService extends Service {
 				}
 				// Do something to keep our session valid
 				// here is where we will eventually do the thread 'watching'
-				getCourses();
+				logIn(user_id, password);
 				
 				int numWeeks = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(BlackboardService.this).getString("cachelength", "-1"));
 				if (numWeeks > 0)
@@ -135,7 +135,8 @@ public class BlackboardService extends Service {
 					Long expirationDate = cal.getTime().getTime();
 				
 					db.beginTransaction();
-						db.delete("Messages", "storage_date <= " + Long.toString(expirationDate), null);
+						db.delete("Messages", "storage_date <= '" + Long.toString(expirationDate)+"'", null);
+						db.setTransactionSuccessful();
 					db.endTransaction();
 				}
 				
@@ -165,6 +166,7 @@ public class BlackboardService extends Service {
 	//variables for Properties
 	private boolean _loggedIn = false;
 	private String user_id = null;
+	private String password = null;
 	
 	// variables used throughout 
 	private HttpClient client = null;
@@ -222,6 +224,7 @@ public class BlackboardService extends Service {
         	Log.i(LOGTAG, "Login Succeeded!");
 			_loggedIn = true;
 			this.user_id = userName;
+			this.password = password;
         	
 		}else
 		{
@@ -767,36 +770,7 @@ public class BlackboardService extends Service {
 	public SQLiteDatabase openDatabase()
 	{
 		File dbFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/blackboard/database.db3"); 
-		if (dbFile.exists())
-		{
-			return SQLiteDatabase.openOrCreateDatabase(dbFile, null);
-			//database exists, connect
-		}else
-		{
-			try {
-				AssetManager am = getAssets();
-				InputStream is = am.open("blackboard.db");
-				dbFile.getParentFile().mkdirs();
-				dbFile.createNewFile();
-				FileOutputStream fos = new FileOutputStream(dbFile);
-				byte[] buf = new byte[1024];
-				int len;
-				while ((len = is.read(buf)) > 0) {
-					fos.write(buf, 0, len);
-				}
-				return SQLiteDatabase.openOrCreateDatabase(dbFile, null);	
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return null;
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				
-				return null;
-			}
-			
-		}
+		return SQLiteDatabase.openDatabase(dbFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READWRITE);
 	}
 	public boolean isThreadWatched(Thread t)
 	{
@@ -813,7 +787,8 @@ public class BlackboardService extends Service {
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
 	{
-		String oldCourseId, oldForumId, oldConfId, oldThreadId, oldMessageId;
+		Vibrator vib = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+		vib.vibrate(1000);
 		
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
