@@ -15,10 +15,7 @@ public class Forum implements Serializable{
 	public String uCount;
 	
 	public Forum(String name, String postCount, String unreadCount, String course, String conf, String forum)
-	{
-		//CIS337-T201_2113_1: CIS337-T201 Web Scripting (2113-1)
-		//EC202-T101_2115_1: EC202-T101 Microeconomics (2115-1) 
-		
+	{		
 		forumName = name;
 		pCount = postCount;
 		uCount = unreadCount;

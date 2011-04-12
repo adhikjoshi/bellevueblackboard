@@ -69,8 +69,6 @@ import android.app.Service;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
@@ -167,6 +165,7 @@ public class BlackboardService extends Service {
 	private boolean _loggedIn = false;
 	private String user_id = null;
 	private String password = null;
+	private long lastCheckTime = 0;
 	
 	// variables used throughout 
 	private HttpClient client = null;
@@ -786,9 +785,14 @@ public class BlackboardService extends Service {
 	}
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
-	{
-		Vibrator vib = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-		vib.vibrate(1000);
+	{		
+		if (System.currentTimeMillis() - lastCheckTime > (1000 * 60 * 1))
+		{
+			lastCheckTime = System.currentTimeMillis();
+		}else
+		{
+			return;
+		}
 		
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
@@ -807,6 +811,7 @@ public class BlackboardService extends Service {
 					n.defaults |= Notification.DEFAULT_SOUND;
 					n.defaults |= Notification.DEFAULT_VIBRATE;
 					n.flags |= Notification.FLAG_AUTO_CANCEL;
+					
 					Context context = getApplicationContext();
 					CharSequence contentTitle = "Thread Updated";
 					CharSequence contentText = Integer.toString(postCount - Integer.parseInt(t.pCount)) + " New Post(s)";
@@ -821,7 +826,7 @@ public class BlackboardService extends Service {
 					PendingIntent contentIntent = PendingIntent.getActivity(BlackboardService.this, 0, ni, 0);
 					
 					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-					nm.notify(1, n);
+					nm.notify((int)System.currentTimeMillis(), n);
 					// update our stored thread
 					ContentValues cv = new ContentValues();
 					t.pCount = Integer.toString(postCount);
