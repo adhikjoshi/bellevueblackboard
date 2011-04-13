@@ -26,6 +26,7 @@
         <activity android:name="com.h3r3t1c.filechooser.FileChooser"></activity>
         <activity android:name="MessageActivity" android:screenOrientation="portrait"></activity>
         <service android:name=".blackboard.BlackboardService"></service>
+        <receiver android:name="WatchUpdateReceiver"></receiver>
 
     </application>
 </manifest>
