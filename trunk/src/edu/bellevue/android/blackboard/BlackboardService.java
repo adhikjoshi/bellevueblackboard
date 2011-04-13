@@ -102,13 +102,14 @@ public class BlackboardService extends Service {
             return BlackboardService.this;
         }
     }
+    
     public void onDestroy()
     {
     	db.close();
     }
 	public void onCreate()
 	{
-		nm =  (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		/*nm =  (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 		// init keep-alive (every 10 minutes)
 		long delay = 1 * 60 * 1000;
 		Timer t = new Timer();
@@ -141,6 +142,7 @@ public class BlackboardService extends Service {
 				checkWatchedThreads();
 			}
 		}, 60 * 1000, delay);
+		*/
 	}
 
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -783,9 +785,21 @@ public class BlackboardService extends Service {
 			return false;
 		}
 	}
+	public void doCheck()
+	{
+		java.lang.Thread t = new java.lang.Thread(new Runnable() {
+			
+			public void run() {
+				// TODO Auto-generated method stub
+				checkWatchedThreads();
+			}
+		});
+		t.start();
+	}
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
 	{		
+		
 		if (System.currentTimeMillis() - lastCheckTime > (1000 * 60 * 1))
 		{
 			lastCheckTime = System.currentTimeMillis();
@@ -793,7 +807,7 @@ public class BlackboardService extends Service {
 		{
 			return;
 		}
-		
+		NotificationManager nMan = (NotificationManager)this.getSystemService(NOTIFICATION_SERVICE);
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
@@ -804,6 +818,7 @@ public class BlackboardService extends Service {
 				Thread t = Thread.makeFromCompressedData(blobData);
 
 				int postCount = getMessageIds(t.forum_id,t.course_id,t.conf_id,t.thread_id).size();
+				// changed to == for testing
 				if (postCount > Integer.parseInt(t.pCount))
 				{
 					// make a notification
@@ -826,7 +841,7 @@ public class BlackboardService extends Service {
 					PendingIntent contentIntent = PendingIntent.getActivity(BlackboardService.this, 0, ni, 0);
 					
 					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-					nm.notify((int)System.currentTimeMillis(), n);
+					nMan.notify((int)System.currentTimeMillis(), n);
 					// update our stored thread
 					ContentValues cv = new ContentValues();
 					t.pCount = Integer.toString(postCount);

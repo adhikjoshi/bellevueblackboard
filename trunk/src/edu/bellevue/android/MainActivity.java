@@ -2,12 +2,12 @@ package edu.bellevue.android;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Calendar;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -16,7 +16,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.AssetManager;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -41,7 +40,7 @@ public class MainActivity extends Activity {
 	private Context ctx;
 	private SharedPreferences prefs;
 	protected BlackboardService mBoundService;
-	
+
 	private ServiceConnection mConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
@@ -84,14 +83,24 @@ public class MainActivity extends Activity {
     	bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
     }
     public void onCreate(Bundle savedInstanceState){
+    	super.onCreate(savedInstanceState);
     	ensureDBExists();
-        super.onCreate(savedInstanceState);
         startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
         
         bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
        
-                
-        
+        // get a Calendar object with current time
+        Calendar cal = Calendar.getInstance();
+        // add 5 minutes to the calendar object
+        cal.add(Calendar.MINUTE, 1);
+        Intent intent = new Intent(MainActivity.this, WatchUpdateReceiver.class);
+        // In reality, you would want to have a static variable for the request code instead of 192837
+        PendingIntent sender = PendingIntent.getBroadcast(this, 192837, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // Get the AlarmManager service
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 1 * 60 * 1000, sender);
+        //am.setInexactRepeating(AlarmManager.RTC, cal.getTimeInMillis(), AlarmManager.INTERVAL_FIFTEEN_MINUTES, sender);
         setContentView(R.layout.main);
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
