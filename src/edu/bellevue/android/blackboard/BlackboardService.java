@@ -167,7 +167,6 @@ public class BlackboardService extends Service {
 	private boolean _loggedIn = false;
 	private String user_id = null;
 	private String password = null;
-	private long lastCheckTime = 0;
 	
 	// variables used throughout 
 	private HttpClient client = null;
@@ -787,10 +786,13 @@ public class BlackboardService extends Service {
 	}
 	public void doCheck()
 	{
+		//Vibrator v = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+		//v.vibrate(2000);
+		logIn(user_id,password);
 		java.lang.Thread t = new java.lang.Thread(new Runnable() {
-			
 			public void run() {
 				// TODO Auto-generated method stub
+				
 				checkWatchedThreads();
 			}
 		});
@@ -799,14 +801,6 @@ public class BlackboardService extends Service {
 	// PRIVATE HELPER METHODS
 	private void checkWatchedThreads()
 	{		
-		
-		if (System.currentTimeMillis() - lastCheckTime > (1000 * 60 * 1))
-		{
-			lastCheckTime = System.currentTimeMillis();
-		}else
-		{
-			return;
-		}
 		NotificationManager nMan = (NotificationManager)this.getSystemService(NOTIFICATION_SERVICE);
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
