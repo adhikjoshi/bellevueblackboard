@@ -755,9 +755,8 @@ public class BlackboardService {
 		t.start();
 	}
 	// PRIVATE HELPER METHODS
-	private static ArrayList<edu.bellevue.android.blackboard.Thread> checkWatchedThreads(Context ctx, NotificationManager nm, HttpClient client)
+	private static void checkWatchedThreads(Context ctx, NotificationManager nm, HttpClient client)
 	{		
-		ArrayList<edu.bellevue.android.blackboard.Thread> updatedThreads = new ArrayList<edu.bellevue.android.blackboard.Thread>();
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
@@ -771,7 +770,7 @@ public class BlackboardService {
 
 				if (postCount > Integer.parseInt(t.pCount))
 				{
-					updatedThreads.add(t);
+
 					// make a notification
 					
 					Notification n = new Notification(R.drawable.icon,"Discussion Thread Updated",System.currentTimeMillis());
@@ -807,7 +806,6 @@ public class BlackboardService {
 			}
 		}
 		System.gc();
-		return updatedThreads;
 	}
 	private static void storeMessage(Message m)
 	{		
