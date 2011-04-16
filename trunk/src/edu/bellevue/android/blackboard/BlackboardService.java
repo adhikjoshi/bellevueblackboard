@@ -768,8 +768,8 @@ public class BlackboardService {
 				Thread t = Thread.makeFromCompressedData(blobData);
 
 				int postCount = getMessageIds(t.forum_id,t.course_id,t.conf_id,t.thread_id, client).size();
-				// changed to == for testing
-				if (postCount == Integer.parseInt(t.pCount))
+
+				if (postCount > Integer.parseInt(t.pCount))
 				{
 					updatedThreads.add(t);
 					// make a notification
