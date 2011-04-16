@@ -8,14 +8,11 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.Html;
@@ -51,33 +48,11 @@ public class MessageActivity extends ListActivity {
 	private Handler handler;
 	private ProgressDialog pd;
 	
-	protected BlackboardService mBoundService;
-	
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-		    Bundle extras = getIntent().getExtras();
-		    friendlyName = extras.getString("name");		    
-		    setTitle(friendlyName + " - Messages");    
-		    pd = new ProgressDialog(MessageActivity.this);
-		    pd.setTitle("Please Wait");
-		    pd.setMessage("Getting Message List...");
-		    pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		    pd.show();
-		    Thread t = new Thread(new getMessagesThread());
-		    t.start();
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	    }
-	};
 	/** Called when the activity is first created. */
 	@Override
 	public void onDestroy()
 	{
 		super.onDestroy();
-		unbindService(mConnection);
 	}
 	
     protected void onActivityResult(int requestCode, int resultCode, Intent intent)
@@ -97,7 +72,17 @@ public class MessageActivity extends ListActivity {
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
-	    bindService(new Intent(MessageActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+	    Bundle extras = getIntent().getExtras();
+	    friendlyName = extras.getString("name");		    
+	    setTitle(friendlyName + " - Messages");    
+	    pd = new ProgressDialog(MessageActivity.this);
+	    pd.setTitle("Please Wait");
+	    pd.setMessage("Getting Message List...");
+	    pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+	    pd.show();
+	    Thread t = new Thread(new getMessagesThread());
+	    t.start();
+
 	}
 
     public boolean onCreateOptionsMenu(Menu m)
@@ -135,7 +120,7 @@ public class MessageActivity extends ListActivity {
 		List<edu.bellevue.android.blackboard.Message> msgs = new ArrayList<edu.bellevue.android.blackboard.Message>();
 		// if we were started from a notification
 		Bundle extras = getIntent().getExtras();
-		Hashtable <String,String> msgIds = mBoundService.getMessageIds(extras.getString("forum_id"),extras.getString("course_id"),extras.getString("conf_id"),extras.getString("thread_id"));
+		Hashtable <String,String> msgIds = BlackboardService.getMessageIds(extras.getString("forum_id"),extras.getString("course_id"),extras.getString("conf_id"),extras.getString("thread_id"));
 		Message m = new Message();
 		m.what = MSG_UPDATE_STATUS;
 		m.arg1 = msgIds.size();
@@ -145,7 +130,7 @@ public class MessageActivity extends ListActivity {
 		{
 			String mId = keyEnum.nextElement();
 			String tId = msgIds.get(mId);
-			msgs.add(mBoundService.getMessage(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),tId,mId));
+			msgs.add(BlackboardService.getMessage(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),tId,mId));
 			handler.sendEmptyMessage(MSG_INCREMENT_COUNT);
 		}
 		//end debug stuff//
@@ -266,7 +251,7 @@ public class MessageActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				mBoundService.downloadAttachment(url, "/sdcard/Downloads/BU"+url.substring(url.lastIndexOf("/")));
+				BlackboardService.downloadAttachment(url, "/sdcard/Downloads/BU"+url.substring(url.lastIndexOf("/")));
 				handler.sendEmptyMessage(DOWNLOAD_COMPLETE);
 			}else
 			{

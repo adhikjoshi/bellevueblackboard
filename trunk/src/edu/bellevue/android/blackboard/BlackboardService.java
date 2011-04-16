@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
@@ -65,16 +63,13 @@ import org.htmlparser.util.NodeList;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Binder;
 import android.os.Environment;
-import android.os.IBinder;
-import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import edu.bellevue.android.MessageActivity;
@@ -84,105 +79,55 @@ import edu.bellevue.android.R;
  * @author TJ
  *
  */
-public class BlackboardService extends Service {
+public class BlackboardService {
 	
 	// This stuff is needed for the 'service' part of things
 	// has nothing to do with blackboard really
-	boolean shouldPerformBackgroundCheck = true;
-	Notification n = null;
-	NotificationManager nm;
-	private final IBinder mBinder = new BlackboardServiceBinder();
-	@Override
-	public IBinder onBind(Intent arg0) {
-		// TODO Auto-generated method stub
-		return mBinder;
-	}
-    public class BlackboardServiceBinder extends Binder {
-        public BlackboardService getService() {
-            return BlackboardService.this;
-        }
-    }
-    
-    public void onDestroy()
-    {
-    	db.close();
-    }
-	public void onCreate()
-	{
-		/*nm =  (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-		// init keep-alive (every 10 minutes)
-		long delay = 1 * 60 * 1000;
-		Timer t = new Timer();
-		t.scheduleAtFixedRate(new TimerTask() {
-			
-			@Override
-			public void run() {
-				if (shouldPerformBackgroundCheck == false)
-				{
-					return;
-				}
-				// Do something to keep our session valid
-				// here is where we will eventually do the thread 'watching'
-				logIn(user_id, password);
-				
-				int numWeeks = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(BlackboardService.this).getString("cachelength", "-1"));
-				if (numWeeks > 0)
-				{
-					Calendar cal = Calendar.getInstance();
-					cal.add(Calendar.DAY_OF_YEAR, (-14) * numWeeks);
-				
-					Long expirationDate = cal.getTime().getTime();
-				
-					db.beginTransaction();
-						db.delete("Messages", "storage_date <= '" + Long.toString(expirationDate)+"'", null);
-						db.setTransactionSuccessful();
-					db.endTransaction();
-				}
-				
-				checkWatchedThreads();
-			}
-		}, 60 * 1000, delay);
-		*/
-	}
+	static boolean shouldPerformBackgroundCheck = true;
 
-	public int onStartCommand(Intent intent, int flags, int startId) {
-        // We want this service to continue running until it is explicitly
-        // stopped, so return sticky.
-        return START_STICKY;
-    }
-
-	private final String LOGTAG = "BB_SERVICE";
+	private static final String LOGTAG = "BB_SERVICE";
 	
 	// URLS USED FOR PARSING
-	private final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
-	private final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
-	private final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
-	private final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
-	private final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
-	private final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
-	private final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
-	private String displayUrl = null;
+	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
+	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
+	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
+	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
+	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
+	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
+	private static final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
+	private static String displayUrl = null;
 	
 	//variables for Properties
-	private boolean _loggedIn = false;
-	private String user_id = null;
-	private String password = null;
-	
+	private static boolean _loggedIn = false;
+	private static String user_id = null;
+	//private static String password = null;
+	private static boolean cacheData = false;
 	// variables used throughout 
-	private HttpClient client = null;
-	private HttpResponse httpResponse = null;
-	private HttpPost httpPost = null;
-	private NodeList nodeList;
-	private Parser p = new Parser();
-	private SQLiteDatabase db = openDatabase();
+	private static HttpClient client = null;
+	private static HttpClient backclient = null;
+	private static HttpResponse httpResponse = null;
+	private static HttpPost httpPost = null;
+	private static NodeList nodeList;
+	private static Parser p = new Parser();
+	private static SQLiteDatabase db = openDatabase();
 	// FILTERS USED FOR PARSING
-	private TagNameFilter tableTagFilter = new TagNameFilter("table");
-	private TagNameFilter anchorTagFilter = new TagNameFilter("a");
-	private TagNameFilter spanTagFilter = new TagNameFilter("span");
-	private TagNameFilter scriptTagFilter = new TagNameFilter("script");
+	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
+	private static TagNameFilter anchorTagFilter = new TagNameFilter("a");
+	private static TagNameFilter spanTagFilter = new TagNameFilter("span");
+	private static TagNameFilter scriptTagFilter = new TagNameFilter("script");
 
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
-	public boolean logIn(String userName, String password)
+	public static boolean logIn(String userName, String password)
+	{
+		if (client == null)
+		{
+			try{
+				client = createHttpClient();
+			}catch(Exception e){}
+		}
+		return logIn(userName,password,client);
+	}
+	public static boolean logIn(String userName, String password, HttpClient client)
 	{
 		shouldPerformBackgroundCheck = false;
 		Log.i(LOGTAG,"Loggin in with User: " + userName + " and Pass: xxxxx");
@@ -190,12 +135,12 @@ public class BlackboardService extends Service {
 
 		httpPost = new HttpPost(LOGIN_URL);
 		List <NameValuePair> nvps = new ArrayList <NameValuePair>();
-		if (client != null){
-			client.getConnectionManager().shutdown();
-			client = null;
+		if (client == null){
+			try{
+				client = createHttpClient();
+			}catch(Exception e){}
 		}
 
-		client = createHttpClient();
 
 		// by parsing out the HTML page and looking at the code
 		// we know that the password is base64 encoded twice (once ansii once unicode)
@@ -223,8 +168,7 @@ public class BlackboardService extends Service {
 		{ 
         	Log.i(LOGTAG, "Login Succeeded!");
 			_loggedIn = true;
-			this.user_id = userName;
-			this.password = password;
+			user_id = userName;
         	
 		}else
 		{
@@ -241,11 +185,11 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return _loggedIn;
 	}
-	public boolean isLoggedIn()
+	public static boolean isLoggedIn()
 	{
 		return _loggedIn;
 	}
-	public List<Course> getCourses()
+	public static List<Course> getCourses()
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Course> courses = new ArrayList<Course>();
@@ -278,7 +222,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return courses;
 	}
-	public List<Forum> getForums(String course_id)
+	public static List<Forum> getForums(String course_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Forum> forums = new ArrayList<Forum>();
@@ -358,7 +302,7 @@ public class BlackboardService extends Service {
 		return forums;
 		
 	}
-	public List<Thread> getThreads(String course_id, String forum_id, String conf_id)
+	public static List<Thread> getThreads(String course_id, String forum_id, String conf_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Thread> threads = new ArrayList<Thread>();
@@ -467,8 +411,12 @@ public class BlackboardService extends Service {
 		}catch(Exception e){e.printStackTrace();}
 		shouldPerformBackgroundCheck = true;
 		return threads;
-	}	
-	public Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id)
+	}
+	public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id)
+	{
+		return getMessageIds(forum_id,course_id, conf_id, thread_id,client);
+	}
+	public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id, HttpClient client)
 	{
 		shouldPerformBackgroundCheck = false;
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
@@ -529,7 +477,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return msgIds;
 	}
-	public Message getMessage(String course_id, String forum_id, String conf_id, String thread_id, String message_id)
+	public static Message getMessage(String course_id, String forum_id, String conf_id, String thread_id, String message_id)
 	{
 		shouldPerformBackgroundCheck = false;
 		Message m = null;
@@ -598,7 +546,7 @@ public class BlackboardService extends Service {
 			postedDate = "<i>" + postedDate + "</i>";
 			m = new Message(subject, postedDate, author, bodyinfo, course_id, conf_id, forum_id, message_id, thread_id);
 			
-			if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("cachedata", false))
+			if (cacheData)
 			{
 				storeMessage(m);
 			}
@@ -606,15 +554,15 @@ public class BlackboardService extends Service {
 			return m;
 		}catch(Exception e){return null;}
 	}
-	public void addThreadToWatch(Thread t)
+	public static void addThreadToWatch(Thread t)
 	{
 		storeThread(t);
 	}
-	public void removeThreadFromWatch(Thread t)
+	public static void removeThreadFromWatch(Thread t)
 	{
 		removeThread(t);
 	}
-	public boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)
+	public static boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)
 	{		
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session?)
@@ -671,7 +619,7 @@ public class BlackboardService extends Service {
 		shouldPerformBackgroundCheck = true;
 		return true;
 	}
-	public boolean createReply(String course_id, String forum_id, String conf_id, String thread_id, String message_id, String subject, String body, String attachedFile)
+	public static boolean createReply(String course_id, String forum_id, String conf_id, String thread_id, String message_id, String subject, String body, String attachedFile)
 	{
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session)
@@ -735,7 +683,7 @@ public class BlackboardService extends Service {
 		return true;
 	}
 	
-	public boolean downloadAttachment (String url, String savePath){
+	public static boolean downloadAttachment (String url, String savePath){
 		shouldPerformBackgroundCheck = false;
 		try
 		{
@@ -767,12 +715,12 @@ public class BlackboardService extends Service {
 	
 	// Database Methods
 	
-	public SQLiteDatabase openDatabase()
+	public static SQLiteDatabase openDatabase()
 	{
 		File dbFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/blackboard/database.db3"); 
 		return SQLiteDatabase.openDatabase(dbFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READWRITE);
 	}
-	public boolean isThreadWatched(Thread t)
+	public static boolean isThreadWatched(Thread t)
 	{
 		Cursor c = db.query("Threads", new String[]{"thread_id"}, "thread_id='"+t.thread_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
@@ -784,24 +732,32 @@ public class BlackboardService extends Service {
 			return false;
 		}
 	}
-	public void doCheck()
+	public static void doCheck(final Context ctx)
 	{
-		//Vibrator v = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-		//v.vibrate(2000);
-		logIn(user_id,password);
+		try {
+			backclient = createHttpClient();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+		logIn(prefs.getString("username", ""),prefs.getString("password", ""),backclient);
+		//logIn(user_id,password);
 		java.lang.Thread t = new java.lang.Thread(new Runnable() {
 			public void run() {
 				// TODO Auto-generated method stub
-				
-				checkWatchedThreads();
+				NotificationManager nm = (NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+				checkWatchedThreads(ctx , nm, backclient);
+				System.gc();
 			}
 		});
 		t.start();
 	}
 	// PRIVATE HELPER METHODS
-	private void checkWatchedThreads()
+	private static ArrayList<edu.bellevue.android.blackboard.Thread> checkWatchedThreads(Context ctx, NotificationManager nm, HttpClient client)
 	{		
-		NotificationManager nMan = (NotificationManager)this.getSystemService(NOTIFICATION_SERVICE);
+		ArrayList<edu.bellevue.android.blackboard.Thread> updatedThreads = new ArrayList<edu.bellevue.android.blackboard.Thread>();
 		Cursor c = db.query("Threads", new String[]{"user_id","thread_data"}, "user_id='"+user_id+"'", null, null, null, null);
 		if (c.getCount() > 0)
 		{
@@ -811,20 +767,21 @@ public class BlackboardService extends Service {
 				byte[] blobData = c.getBlob(c.getColumnIndex("thread_data"));
 				Thread t = Thread.makeFromCompressedData(blobData);
 
-				int postCount = getMessageIds(t.forum_id,t.course_id,t.conf_id,t.thread_id).size();
+				int postCount = getMessageIds(t.forum_id,t.course_id,t.conf_id,t.thread_id, client).size();
 				// changed to == for testing
-				if (postCount > Integer.parseInt(t.pCount))
+				if (postCount == Integer.parseInt(t.pCount))
 				{
+					updatedThreads.add(t);
 					// make a notification
-					n = new Notification(R.drawable.icon,"Discussion Thread Updated",System.currentTimeMillis());
+					
+					Notification n = new Notification(R.drawable.icon,"Discussion Thread Updated",System.currentTimeMillis());
 					n.defaults |= Notification.DEFAULT_SOUND;
 					n.defaults |= Notification.DEFAULT_VIBRATE;
 					n.flags |= Notification.FLAG_AUTO_CANCEL;
 					
-					Context context = getApplicationContext();
 					CharSequence contentTitle = "Thread Updated";
 					CharSequence contentText = Integer.toString(postCount - Integer.parseInt(t.pCount)) + " New Post(s)";
-					Intent ni = new Intent(BlackboardService.this, MessageActivity.class);
+					Intent ni = new Intent(ctx, MessageActivity.class);
 					ni.putExtra("name", t.threadName);
 					ni.putExtra("fromNotification", true);
 					ni.putExtra("conf_id", t.conf_id);
@@ -832,10 +789,10 @@ public class BlackboardService extends Service {
 					ni.putExtra("forum_id", t.forum_id);
 					ni.putExtra("thread_id", t.thread_id);
 					ni.putExtra("message_id", t.thread_id);
-					PendingIntent contentIntent = PendingIntent.getActivity(BlackboardService.this, 0, ni, 0);
+					PendingIntent contentIntent = PendingIntent.getActivity(ctx, 0, ni, 0);
 					
-					n.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-					nMan.notify((int)System.currentTimeMillis(), n);
+					n.setLatestEventInfo(ctx, contentTitle, contentText, contentIntent);
+					nm.notify((int)System.currentTimeMillis(), n);
 					// update our stored thread
 					ContentValues cv = new ContentValues();
 					t.pCount = Integer.toString(postCount);
@@ -849,8 +806,10 @@ public class BlackboardService extends Service {
 				c.moveToNext();
 			}
 		}
+		System.gc();
+		return updatedThreads;
 	}
-	private void storeMessage(Message m)
+	private static void storeMessage(Message m)
 	{		
 		ContentValues cv = new ContentValues();
 		Calendar cal = Calendar.getInstance();
@@ -868,7 +827,7 @@ public class BlackboardService extends Service {
 		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
 		finally{}
 	}
-	private void storeThread(Thread t)
+	private static void storeThread(Thread t)
 	{
 		ContentValues cv = new ContentValues();
 		
@@ -885,7 +844,7 @@ public class BlackboardService extends Service {
 		}catch(Exception e){ e.printStackTrace(); db.endTransaction();}
 		finally{}	
 	}
-	private void removeThread(Thread t)
+	private static void removeThread(Thread t)
 	{
 		db.beginTransaction();
 			try{
@@ -894,7 +853,7 @@ public class BlackboardService extends Service {
 			}catch(Exception e){}
 		db.endTransaction();
 	}
-	private Message getMsgFromDb(String courseid, String mId, String tId) {
+	private static Message getMsgFromDb(String courseid, String mId, String tId) {
 		// TODO Auto-generated method stub
 		Cursor c = db.query("Messages", new String[]{"course_id","message_id","thread_id","message_data"}, "course_id='"+courseid+"' AND message_id='"+mId+"' AND thread_id='"+tId+"'", null, null, null, null);
 		if (c.getCount() > 0)
@@ -909,7 +868,7 @@ public class BlackboardService extends Service {
 		}
 	}
 	
-	private HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
+	private static HttpClient createHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException
     {
 		// This function will create the HttpClient we need to use for blackboard
 		// this uses our MySSLSocketFactory to prevent cert checking
@@ -929,7 +888,7 @@ public class BlackboardService extends Service {
         d.getParams().setParameter("http.useragent", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.13 (KHTML, like Gecko) Chrome/9.0.597.107 Safari/534.13");
         return d;
     }
-	private String convertStreamToString(InputStream is)
+	private static String convertStreamToString(InputStream is)
     throws IOException {
 		// NOT MY CODE!
 		// This function effectively converts the HTTP response into a string

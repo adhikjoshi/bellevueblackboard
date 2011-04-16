@@ -4,14 +4,11 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
@@ -34,19 +31,7 @@ public class CourseActivity extends ListActivity {
 	private Handler handler;
 	private ProgressDialog pd;
 	protected BlackboardService mBoundService;
-	
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-	        pd = ProgressDialog.show(CourseActivity.this, "Please Wait", "Loading Courses...");   
-		    Thread t = new Thread(new getCoursesThread());
-		    t.start();
-	    }
 
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	    }
-	};
 
 	/** Called when the activity is first created. */
 	@Override
@@ -56,7 +41,10 @@ public class CourseActivity extends ListActivity {
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
-	    bindService(new Intent(CourseActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+	    
+	    pd = ProgressDialog.show(CourseActivity.this, "Please Wait", "Loading Courses...");   
+	    Thread t = new Thread(new getCoursesThread());
+	    t.start();
 	    
 	}
 	
@@ -125,7 +113,7 @@ public class CourseActivity extends ListActivity {
 		public void run() {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
-				courses = mBoundService.getCourses();
+				courses = BlackboardService.getCourses();
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{

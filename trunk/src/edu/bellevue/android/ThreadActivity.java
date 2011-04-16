@@ -4,15 +4,12 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.ContextMenu;
@@ -43,38 +40,16 @@ public class ThreadActivity extends ListActivity {
 	private Handler handler;
 	private ProgressDialog pd;
 	
-	protected BlackboardService mBoundService;
-	
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-	        Bundle extras = getIntent().getExtras();
-		    friendlyName = extras.getString("name");
-		    
-		    setTitle(friendlyName + " - Threads");
-		    
-		    pd = ProgressDialog.show(ThreadActivity.this, "Please Wait", "Loading Threads...");
-		    
-		    Thread t = new Thread(new getThreadsThread());
-		    t.start();
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	    }
-	};
 	/** Called when the activity is first created. */
 	@Override
     public void onDestroy()
     {
     	super.onDestroy();
-    	unbindService(mConnection);
     	
     }
     public void onResume()
     {
     	super.onResume();
-    	bindService(new Intent(ThreadActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
     }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
@@ -83,7 +58,15 @@ public class ThreadActivity extends ListActivity {
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
-	    bindService(new Intent(ThreadActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+	    Bundle extras = getIntent().getExtras();
+	    friendlyName = extras.getString("name");
+	    
+	    setTitle(friendlyName + " - Threads");
+	    
+	    pd = ProgressDialog.show(ThreadActivity.this, "Please Wait", "Loading Threads...");
+	    
+	    Thread t = new Thread(new getThreadsThread());
+	    t.start();
 	    
 	}
 
@@ -153,14 +136,14 @@ public class ThreadActivity extends ListActivity {
     	if (mi.getTitle().equals("Watch This Thread"))
     	{
 	    	edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
-	    	mBoundService.addThreadToWatch(t);
+	    	BlackboardService.addThreadToWatch(t);
 	    	TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
 	    	tv.setTextColor(Color.RED);
     	}else
     	{
     		// unwatch thread
     		edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
-    		mBoundService.removeThreadFromWatch(t);
+    		BlackboardService.removeThreadFromWatch(t);
     		TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
 	    	tv.setTextColor(Color.WHITE);
     	}
@@ -194,7 +177,7 @@ public class ThreadActivity extends ListActivity {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
 				Bundle extras = getIntent().getExtras();
-				threads = mBoundService.getThreads(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"));
+				threads = BlackboardService.getThreads(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"));
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{
@@ -233,7 +216,7 @@ public class ThreadActivity extends ListActivity {
                     
                     if (tt != null) {
                         tt.setText(o.threadName);
-                        if (mBoundService.isThreadWatched(o))
+                        if (BlackboardService.isThreadWatched(o))
                         {
                         	tt.setTextColor(Color.RED);
 
@@ -255,7 +238,7 @@ public class ThreadActivity extends ListActivity {
     							ContextMenuInfo menuInfo) {
     						// TODO Auto-generated method stub    				 
     						menu.setHeaderTitle("Options...");
-    						if (!mBoundService.isThreadWatched(threads.get(v.getId())))
+    						if (!BlackboardService.isThreadWatched(threads.get(v.getId())))
     						{
     							menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Watch This Thread");
     						}else
