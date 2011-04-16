@@ -2,13 +2,9 @@ package edu.bellevue.android;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.text.Editable;
 import android.view.View;
@@ -24,26 +20,11 @@ import edu.bellevue.android.blackboard.BlackboardService;
 
 public class MakePostActivity extends Activity {
 
-	private String confid;
-	private String courseid;
-	private String forumid;
 	private String method;
 	private String attachedFile = null;
 	private Handler handler = null;
 	private ProgressDialog pd = null;
-	protected BlackboardService mBoundService;
 	
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	        Toast.makeText(MakePostActivity.this, "Service Disconnected",
-	                Toast.LENGTH_SHORT).show();
-	    }
-	};
 	/** Called when the activity is first created. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -56,14 +37,11 @@ public class MakePostActivity extends Activity {
 	public void onDestroy()
 	{
 		super.onDestroy();
-		unbindService(mConnection);
 	}
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.messagemaker);
-	    bindService(new Intent(MakePostActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
 	    handler = new MakePostHandler();
-	    EditText bodyText = ((EditText)findViewById(R.id.txtThreadBody));
 	    
 	    Bundle extras = getIntent().getExtras();
 
@@ -86,9 +64,6 @@ public class MakePostActivity extends Activity {
 	    }else if (method.equals("newthread"))
 	    {
 	    	header.setText("Create New Thread");
-		    confid = extras.getString("confid");
-		    courseid = extras.getString("courseid");
-		    forumid = extras.getString("forumid");
 	    }else if (method.equals("reply"))
 	    {
 	    	header.setText("Create a Reply");
@@ -123,12 +98,12 @@ public class MakePostActivity extends Activity {
 			if (method.equals("newthread"))
 			{
 				Bundle extras = getIntent().getExtras();
-				mBoundService.createNewThread(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),subject, body, attachedFile);
+				BlackboardService.createNewThread(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),subject, body, attachedFile);
 				handler.sendEmptyMessage(0);
 			}else if (method.equals("reply"))
 			{
 				Bundle extras = getIntent().getExtras();
-				mBoundService.createReply(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),extras.getString("thread_id"),extras.getString("message_id"),subject, body,attachedFile);
+				BlackboardService.createReply(extras.getString("course_id"),extras.getString("forum_id"),extras.getString("conf_id"),extras.getString("thread_id"),extras.getString("message_id"),subject, body,attachedFile);
 				handler.sendEmptyMessage(0);
 			}
 		}

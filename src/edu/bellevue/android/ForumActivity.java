@@ -4,14 +4,11 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
@@ -39,22 +36,6 @@ public class ForumActivity extends ListActivity {
 	private Context ctx;
 	private Handler handler;
 	private ProgressDialog pd;
-	protected BlackboardService mBoundService;
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-	        Bundle extras = ForumActivity.this.getIntent().getExtras();
-		    friendlyName = extras.getString("name");
-		    setTitle(friendlyName + " - Forums");
-		    pd = ProgressDialog.show(ForumActivity.this, "Please Wait", "Loading Forums...");
-		    Thread t = new Thread(new getForumsThread());
-		    t.start();
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	    }
-	};
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -65,7 +46,12 @@ public class ForumActivity extends ListActivity {
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
-	    bindService(new Intent(ForumActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
+	    Bundle extras = ForumActivity.this.getIntent().getExtras();
+	    friendlyName = extras.getString("name");
+	    setTitle(friendlyName + " - Forums");
+	    pd = ProgressDialog.show(ForumActivity.this, "Please Wait", "Loading Forums...");
+	    Thread t = new Thread(new getForumsThread());
+	    t.start();
 	    
 	}
 	public void onListItemClick(ListView l, View v, int position, long id)
@@ -136,7 +122,7 @@ public class ForumActivity extends ListActivity {
 			if (ConnChecker.shouldConnect(prefs, ctx))
 			{
 				Bundle extras = getIntent().getExtras();
-				forums = mBoundService.getForums(extras.getString("course_id"));
+				forums = BlackboardService.getForums(extras.getString("course_id"));
 				handler.sendEmptyMessage(THREAD_COMPLETE);
 			}else
 			{

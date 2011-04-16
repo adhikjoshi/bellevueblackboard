@@ -9,17 +9,14 @@ import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
@@ -39,34 +36,6 @@ public class MainActivity extends Activity {
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
-	protected BlackboardService mBoundService;
-
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        mBoundService = ((BlackboardService.BlackboardServiceBinder)service).getService();
-	        if (mBoundService.isLoggedIn())
-	        {
-	        	// switch to Courses view since we're already logged in :)
-	        	handler.sendEmptyMessage(THREAD_COMPLETE);
-	        }
-	        if (prefs.getBoolean("autologin", false))
-	        {
-	        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
-	    		EditText password = ((EditText)findViewById(R.id.txtPassword));
-	    		userName.setText(prefs.getString("username", ""));
-	    		password.setText(prefs.getString("password", ""));
-	    		
-	    		// call the submit button's click handler :)
-	    		new submitListener().onClick(null);
-	    		
-	        }
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        mBoundService = null;
-	        
-	    }
-	};
 	
 	
     /** Called when the activity is first created. */
@@ -74,21 +43,16 @@ public class MainActivity extends Activity {
     public void onDestroy()
     {
     	super.onDestroy();
-    	unbindService(mConnection);
     	
     }
     public void onResume()
     {
     	super.onResume();
-    	bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
     }
     public void onCreate(Bundle savedInstanceState){
     	super.onCreate(savedInstanceState);
     	ensureDBExists();
-        startService(new Intent(MainActivity.this,edu.bellevue.android.blackboard.BlackboardService.class));
-        
-        bindService(new Intent(MainActivity.this,BlackboardService.class),mConnection,Context.BIND_AUTO_CREATE);
-       
+    	
         // get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 5 minutes to the calendar object
@@ -100,8 +64,7 @@ public class MainActivity extends Activity {
         // Get the AlarmManager service
         AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
         am.setInexactRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),AlarmManager.INTERVAL_FIFTEEN_MINUTES, sender);
-        //am.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 10 * 60 * 1000, sender);
-        //am.setInexactRepeating(AlarmManager.RTC, cal.getTimeInMillis(), AlarmManager.INTERVAL_FIFTEEN_MINUTES, sender);
+        //am.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 1 * 60 * 1000, sender);
         setContentView(R.layout.main);
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
@@ -114,8 +77,25 @@ public class MainActivity extends Activity {
         }
         
         e.putBoolean("firstRun", false);
-        e.commit();
-        // AutoLogin stuff        
+        e.commit();        
+        
+    	if (BlackboardService.isLoggedIn())
+        {
+        	// switch to Courses view since we're already logged in :)
+        	handler.sendEmptyMessage(THREAD_COMPLETE);
+        }
+    	
+        if (prefs.getBoolean("autologin", false))
+        {
+        	EditText userName = ((EditText)findViewById(R.id.txtUserName));
+    		EditText password = ((EditText)findViewById(R.id.txtPassword));
+    		userName.setText(prefs.getString("username", ""));
+    		password.setText(prefs.getString("password", ""));
+    		
+    		// call the submit button's click handler :)
+    		new submitListener().onClick(null);
+    		
+        }
     }
      
     private void ensureDBExists() 
@@ -181,7 +161,7 @@ public class MainActivity extends Activity {
     		// Attempt to log in
     		if (ConnChecker.shouldConnect(prefs, ctx))
     		{
-    			mBoundService.logIn(user, pass);
+    			BlackboardService.logIn(user, pass);
     			handler.sendEmptyMessage(THREAD_COMPLETE);
     		}else
     		{
@@ -209,7 +189,7 @@ public class MainActivity extends Activity {
     		switch (m.what)
     		{
     		case THREAD_COMPLETE:
-    			if (mBoundService.isLoggedIn())
+    			if (BlackboardService.isLoggedIn())
     			{
     				// Display if successful
     				Toast.makeText(MainActivity.this, "Logged In!", Toast.LENGTH_SHORT).show();

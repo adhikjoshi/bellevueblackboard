@@ -1,7 +1,6 @@
 package edu.bellevue.android.blackboard;
 
 import java.util.Comparator;
-import java.util.Date;
 
 public class MessageComparator implements Comparator<Message> {
 
