@@ -5,15 +5,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import edu.bellevue.android.R;
-
-import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.Toast;
+import edu.bellevue.android.R;
 
 public class FileChooser extends ListActivity {
 	
