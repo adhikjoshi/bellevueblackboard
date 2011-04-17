@@ -73,6 +73,13 @@ public class MessageActivity extends ListActivity {
 	    handler = new threadHandler();
 	    
 	    Bundle extras = getIntent().getExtras();
+	    
+	    if (extras.getBoolean("fromNotification"))
+	    {
+	    	prefs = PreferenceManager.getDefaultSharedPreferences(this);
+	        BlackboardService.logIn(prefs.getString("username", ""),prefs.getString("password", ""));
+	    }
+	    
 	    friendlyName = extras.getString("name");		    
 	    setTitle(friendlyName + " - Messages");    
 	    pd = new ProgressDialog(MessageActivity.this);
@@ -207,6 +214,7 @@ public class MessageActivity extends ListActivity {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
                 View v = convertView;
+                v = null;
                 if (v == null) {
                     LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     v = vi.inflate(R.layout.messagerow, null);
@@ -224,6 +232,7 @@ public class MessageActivity extends ListActivity {
                         	mt.setText("By: " + o.getMsgAuthor() + "\nOn: "+Html.fromHtml(o.getMsgDate()));
                         }
                         if(bt != null){
+                        	
                         	bt.loadDataWithBaseURL("https://cyberactive.bellevue.edu", "<html><body><font color='white'>" + o.getBody() + "</font></body></html>", "text/html", "UTF-8", null);
                         	bt.setBackgroundColor(0);
                         	bt.setWebViewClient(new myWebClient());
