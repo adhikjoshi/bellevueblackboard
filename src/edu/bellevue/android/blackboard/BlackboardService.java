@@ -119,12 +119,12 @@ public class BlackboardService {
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public static boolean logIn(String userName, String password)
 	{
-		if (client == null)
-		{
+		//if (client == null)
+		//{
 			try{
 				client = createHttpClient();
 			}catch(Exception e){}
-		}
+		//}
 		return logIn(userName,password,client);
 	}
 	public static boolean logIn(String userName, String password, HttpClient client)
