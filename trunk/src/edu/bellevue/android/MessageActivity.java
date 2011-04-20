@@ -22,11 +22,13 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardService;
@@ -108,7 +110,7 @@ public class MessageActivity extends ListActivity {
     	return true;
     }
     
-    public boolean onContextItemSelected(MenuItem aItem)
+    /*public boolean onContextItemSelected(MenuItem aItem)
     {    	
     	edu.bellevue.android.blackboard.Message m = messages.get(aItem.getItemId());
     	
@@ -120,7 +122,7 @@ public class MessageActivity extends ListActivity {
 		i.putExtras(extras);
 		startActivityForResult(i, 1);
 		return true;
-    }
+    }*/
     
 	private List<edu.bellevue.android.blackboard.Message> getAllMessages()
 	{
@@ -219,17 +221,19 @@ public class MessageActivity extends ListActivity {
                     LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     v = vi.inflate(R.layout.messagerow, null);
                 }
+                
                 edu.bellevue.android.blackboard.Message o = (edu.bellevue.android.blackboard.Message)(items.get(position));
                 if (o != null) {
                         TextView tt = (TextView) v.findViewById(R.id.toptext);
                         
                         TextView mt = (TextView) v.findViewById(R.id.middletext);
-                        WebView bt = (WebView) v.findViewById(R.id.bottomtext);
+                        View wv = v.findViewById(R.id.bottomtext);
+                        WebView bt = (WebView) wv;
                         if (tt != null) {
-                              tt.setText(Html.fromHtml(o.getMsgName())); 
+                              tt.setText(Html.fromHtml(" " + o.getMsgName())); 
                         }
                         if (mt != null) {
-                        	mt.setText("By: " + o.getMsgAuthor() + "\nOn: "+Html.fromHtml(o.getMsgDate()));
+                        	mt.setText("     By: " + o.getMsgAuthor() + "\n     On: "+Html.fromHtml(o.getMsgDate()));
                         }
                         if(bt != null){
                         	
@@ -238,8 +242,27 @@ public class MessageActivity extends ListActivity {
                         	bt.setWebViewClient(new myWebClient());
                             //bt.setText(Html.fromHtml(o.getBody()));
                         }
+                        Button b = (Button) v.findViewById(R.id.btnReply);
+                        b.setId(position);
+                        b.setOnClickListener(new OnClickListener() {
+							
+							public void onClick(View v) {
+								// TODO Auto-generated method stub
+								
+								edu.bellevue.android.blackboard.Message m = messages.get(v.getId());
+						    	
+								Intent i = new Intent(MessageActivity.this,MakePostActivity.class);
+								Bundle extras = getIntent().getExtras();
+								extras.putString("method", "reply");
+								extras.putString("message_id", m.getMessageId());
+								extras.putString("thread_id", m.getThreadId());
+								extras.putString("defSubject", "RE: " + m.getMsgName());
+								i.putExtras(extras);
+								startActivityForResult(i, 1);
+							}
+						});
                 }
-                v.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
+                /*v.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
 					// TRY USING THE VIEW, AND ITERATE TO FIND THE CORRECT ONE?
 					public void onCreateContextMenu(ContextMenu menu, View v,
 							ContextMenuInfo menuInfo) {
@@ -248,7 +271,7 @@ public class MessageActivity extends ListActivity {
 						menu.setHeaderTitle("Options...");
 						menu.add(ContextMenu.NONE,x,ContextMenu.NONE,"Reply...");
 					}
-				});
+				});*/
                 return v;
         }
     }   
@@ -280,8 +303,10 @@ public class MessageActivity extends ListActivity {
     	{
     		if (url.startsWith("https://cyberactive.bellevue.edu/courses"))
     		{
+    			pd = new ProgressDialog(MessageActivity.this);
     			pd.setTitle("Please Wait");
     			pd.setMessage("Downloading...");
+    			pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
     			pd.show();
     			Thread t = new Thread(new downloadThread(url));
     			t.start();

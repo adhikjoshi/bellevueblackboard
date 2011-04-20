@@ -22,6 +22,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -97,7 +98,6 @@ public class ThreadActivity extends ListActivity {
 	}
     public boolean onCreateOptionsMenu(Menu m)
     {
-    	m.add("New Thread");
     	m.add("Settings");
     	return super.onCreateOptionsMenu(m);
     }
@@ -118,36 +118,7 @@ public class ThreadActivity extends ListActivity {
     		Intent i = new Intent(this,PrefActivity.class);
     		startActivity(i);
     	}
-    	if (mi.getTitle().equals("New Thread"))
-    	{
-    		Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
-    		i.putExtra("method", "newthread");
-    		Bundle extras = getIntent().getExtras();
-    		i.putExtra("course_id", extras.getString("course_id"));
-    		i.putExtra("forum_id", extras.getString("forum_id"));
-    		i.putExtra("conf_id", extras.getString("conf_id"));    		
-    		startActivityForResult(i, 0);
-    		
-    	}
-    	return true;
-    }
-    public boolean onContextItemSelected(MenuItem mi)
-    {
-    	if (mi.getTitle().equals("Watch This Thread"))
-    	{
-	    	edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
-	    	BlackboardService.addThreadToWatch(t);
-	    	TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
-	    	tv.setTextColor(Color.RED);
-    	}else
-    	{
-    		// unwatch thread
-    		edu.bellevue.android.blackboard.Thread t = threads.get(mi.getItemId());
-    		BlackboardService.removeThreadFromWatch(t);
-    		TextView tv = ((TextView)getListView().getChildAt(mi.getItemId()).findViewById(R.id.toptext));
-	    	tv.setTextColor(Color.WHITE);
-    	}
-    	return true;
+    	return super.onOptionsItemSelected(mi);
     }
 	
 	protected class threadHandler extends Handler
@@ -158,6 +129,7 @@ public class ThreadActivity extends ListActivity {
 			switch(m.what)
 			{
 			case THREAD_COMPLETE:
+				threads.add(0, null);
 				setListAdapter(new ThreadAdapter(ctx, android.R.layout.simple_list_item_1,threads));
 				break;
 			case CONN_NOT_ALLOWED:
@@ -194,28 +166,48 @@ public class ThreadActivity extends ListActivity {
     private class ThreadAdapter extends ArrayAdapter<edu.bellevue.android.blackboard.Thread> {
 
         private List<edu.bellevue.android.blackboard.Thread> items;
-
+        private Context ctx;
         public ThreadAdapter(Context context, int textViewResourceId, List<edu.bellevue.android.blackboard.Thread> items) {
                 super(context, textViewResourceId, items);
                 this.items = items;
+                ctx = context;
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-                View v = convertView;
-                if (v == null) {
+                View v = null;
+                //if (v == null) {
                     LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     v = vi.inflate(R.layout.threadrow, null);
-                }
+                //}
                 v.setId(position);
                 edu.bellevue.android.blackboard.Thread o = items.get(position);
+                if (o == null)
+                {
+                	Button b = new Button(ctx);
+                	b.setText("Create New Thread");
+                	b.setOnClickListener(new OnClickListener() {
+						
+						public void onClick(View v) {
+							// TODO Auto-generated method stub
+							Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
+				    		i.putExtra("method", "newthread");
+				    		Bundle extras = getIntent().getExtras();
+				    		i.putExtra("course_id", extras.getString("course_id"));
+				    		i.putExtra("forum_id", extras.getString("forum_id"));
+				    		i.putExtra("conf_id", extras.getString("conf_id"));    		
+				    		startActivityForResult(i, 0);
+						}
+					});
+                	return b;
+                }
                 if (o != null) {
                     TextView tt = (TextView) v.findViewById(R.id.toptext);
                     TextView mt = (TextView) v.findViewById(R.id.middletext);
                     TextView bt = (TextView) v.findViewById(R.id.bottomtext);
                     
                     if (tt != null) {
-                        tt.setText(o.threadName);
+                        tt.setText(" " + o.threadName);
                         if (BlackboardService.isThreadWatched(o))
                         {
                         	tt.setTextColor(Color.RED);
@@ -227,26 +219,43 @@ public class ThreadActivity extends ListActivity {
                         
                     }
                     if (mt != null) {
-                    	mt.setText("By: " + o.threadAuthor + " On: "+o.threadDate);
+                    	mt.setText("     By: " + o.threadAuthor + " On: "+o.threadDate);
                     }
                     if(bt != null){
-                          bt.setText("Total Posts: "+ o.pCount + " Unread: " + o.uCount);
+                    	bt.setText("     Total Posts: "+ o.pCount + " Unread: " + o.uCount);
                     }
-                    v.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
-    					// TRY USING THE VIEW, AND ITERATE TO FIND THE CORRECT ONE?
-    					public void onCreateContextMenu(ContextMenu menu, View v,
-    							ContextMenuInfo menuInfo) {
-    						// TODO Auto-generated method stub    				 
-    						menu.setHeaderTitle("Options...");
-    						if (!BlackboardService.isThreadWatched(threads.get(v.getId())))
-    						{
-    							menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Watch This Thread");
-    						}else
-    						{
-    							menu.add(ContextMenu.NONE,v.getId(),ContextMenu.NONE,"Stop Watching Thread");
-    						}
-    					}
-    				});
+                    
+                    Button b = (Button) v.findViewById(R.id.btnWatch);
+                    b.setId(position);
+                    if (BlackboardService.isThreadWatched(threads.get(position)))
+                    {
+                    	b.setText("Unwatch");
+                    }else
+                    {
+                    	b.setText("Watch");
+                    }
+                    b.setOnClickListener(new OnClickListener() {
+						
+						public void onClick(View v) {
+							// TODO Auto-generated method stub
+							
+							edu.bellevue.android.blackboard.Thread t = threads.get(v.getId());
+							if (((Button) v).getText().toString().equals("Watch"))
+					    	{
+						    	BlackboardService.addThreadToWatch(t);
+						    	((Button)v).setText("Unwatch");
+						    	TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
+						    	tv.setTextColor(Color.RED);
+					    	}else
+					    	{
+					    		// unwatch thread
+					    		BlackboardService.removeThreadFromWatch(t);
+					    		((Button)v).setText("Watch");
+					    		TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
+						    	tv.setTextColor(Color.WHITE);
+					    	}
+						}
+					});
                     v.setOnClickListener(new OnClickListener() {
 						
 						public void onClick(View v) {

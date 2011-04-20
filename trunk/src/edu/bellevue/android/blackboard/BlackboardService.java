@@ -83,6 +83,7 @@ public class BlackboardService {
 	
 	// This stuff is needed for the 'service' part of things
 	// has nothing to do with blackboard really
+	public static boolean offlineDemo = false;
 	static boolean shouldPerformBackgroundCheck = true;
 
 	private static final String LOGTAG = "BB_SERVICE";
@@ -119,6 +120,17 @@ public class BlackboardService {
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public static boolean logIn(String userName, String password)
 	{
+		if (userName.equals("demo") && password.equals("demo"))
+		{
+			user_id="demo";
+			offlineDemo = true;
+			_loggedIn = true;
+		}else{
+			offlineDemo = false;
+		}
+		
+		if (offlineDemo)
+			return true;
 		//if (client == null)
 		//{
 			try{
@@ -129,6 +141,18 @@ public class BlackboardService {
 	}
 	public static boolean logIn(String userName, String password, HttpClient client)
 	{
+		if (userName.equals("demo") && password.equals("demo"))
+		{
+			user_id="demo";
+			offlineDemo = true;
+			_loggedIn = true;
+		}else{
+			offlineDemo = false;
+		}
+		
+		if (offlineDemo)
+			return true;
+		
 		shouldPerformBackgroundCheck = false;
 		Log.i(LOGTAG,"Loggin in with User: " + userName + " and Pass: xxxxx");
 		try{
@@ -186,13 +210,25 @@ public class BlackboardService {
 		return _loggedIn;
 	}
 	public static boolean isLoggedIn()
-	{
+	{		
 		return _loggedIn;
 	}
 	public static List<Course> getCourses()
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Course> courses = new ArrayList<Course>();
+		if (offlineDemo)
+		{
+			Course c = new Course("CIS337-T201_2113_1: CIS337-T201 Course 1 (2113-1)");
+			courses.add(c);
+			c = new Course("CIS337-T201_2113_1: CIS337-T201 Course 2 (2113-1)");
+			courses.add(c);
+			c = new Course("CIS337-T201_2113_1: CIS337-T201 Course 3 (2113-1)");
+			courses.add(c);
+			c = new Course("CIS337-T201_2113_1: CIS337-T201 Course 4 (2113-1)");
+			courses.add(c);
+			return courses;
+		}
 		try
 		{
 	        httpPost = new HttpPost(COURSES_URL);
@@ -226,6 +262,18 @@ public class BlackboardService {
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Forum> forums = new ArrayList<Forum>();
+		if (offlineDemo)
+		{
+			Forum f = new Forum("Forum 1","20","10","0","0","0");
+			forums.add(f);
+			f = new Forum("Forum 2","20","10","0","0","0");
+			forums.add(f);
+			f = new Forum("Forum 3","20","10","0","0","0");
+			forums.add(f);
+			f = new Forum("Forum 4","20","10","0","0","0");
+			forums.add(f);
+			return forums;
+		}
 		try
 		{
 			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,course_id));
@@ -306,6 +354,27 @@ public class BlackboardService {
 	{
 		shouldPerformBackgroundCheck = false;
 		List<Thread> threads = new ArrayList<Thread>();
+		if (offlineDemo)
+		{
+			Thread t = new Thread("Thread 1","01/01/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 2","01/02/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 3","01/03/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 4","01/04/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 5","01/05/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 6","01/05/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 7","01/05/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			t = new Thread("Thread 8","01/05/01","DemoUser","10","0","0","0","0","0");
+			threads.add(t);
+			return threads;
+			
+		}
 		try
 		{			
 			Log.i("THREADS", String.format(THREADS_URL,forum_id,conf_id,course_id));
@@ -420,7 +489,15 @@ public class BlackboardService {
 	{
 		shouldPerformBackgroundCheck = false;
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
-		
+		if (offlineDemo)
+		{
+			msgIds.put("1", "1");
+			msgIds.put("2", "2");
+			msgIds.put("3", "3");
+			msgIds.put("4", "4");
+			msgIds.put("5", "5");
+			return msgIds;
+		}
 		//load site that contains all replies, use this to get the IDs we need to get the details.
 		try
 		{
@@ -479,8 +556,14 @@ public class BlackboardService {
 	}
 	public static Message getMessage(String course_id, String forum_id, String conf_id, String thread_id, String message_id)
 	{
+		
 		shouldPerformBackgroundCheck = false;
 		Message m = null;
+		if (offlineDemo)
+		{
+			m = new Message("Message "+thread_id,"01/"+thread_id+"/01","DemoUser","Demo Body<br><a href='https://cyberactive.bellevue.edu/courses/foo'>DemoLink</a>","0","0","0","0","0");
+			return m;
+		}
 		m = getMsgFromDb(course_id, message_id, thread_id);
 		if (m != null)
 		{
@@ -564,6 +647,8 @@ public class BlackboardService {
 	}
 	public static boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)
 	{		
+		if (offlineDemo)
+			return true;
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session?)
 		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
@@ -621,6 +706,8 @@ public class BlackboardService {
 	}
 	public static boolean createReply(String course_id, String forum_id, String conf_id, String thread_id, String message_id, String subject, String body, String attachedFile)
 	{
+		if (offlineDemo)
+			return true;
 		shouldPerformBackgroundCheck = false;
 		// first we need to get this 'nonce' security thing (Session)
 		httpPost = new HttpPost("https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=create&do=create&type=thread&forum_id="+forum_id+"&course_id="+course_id+"&nav=discussion_board_entry&conf_id="+conf_id);
