@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
   xmlns:android="http://schemas.android.com/apk/res/android"
-  android:layout_height="fill_parent" android:layout_width="fill_parent" android:orientation="vertical" android:background="@drawable/chalkbg">
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent" android:background="@drawable/chalkbg">
+    <LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent" android:orientation="vertical" android:background="@drawable/chalkbg" android:layout_height="fill_parent">
     <TableRow android:id="@+id/tableRow1" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1">
         <TextView android:layout_height="wrap_content" android:gravity="center_vertical|center_horizontal" android:layout_width="fill_parent" android:text="Create New Thread" android:id="@+id/txtHeader"></TextView>
     </TableRow>
-    <TableRow android:id="@+id/tableRow2" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1">
+    <TableRow android:id="@+id/tableRow2" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="8sp">
         <TextView android:id="@+id/textView2" android:layout_width="wrap_content" android:text="Subject: " android:layout_height="wrap_content"></TextView>
         <EditText android:layout_height="wrap_content" android:layout_width="fill_parent" android:id="@+id/txtThreadSubject" android:layout_marginRight="10sp" android:singleLine="true"></EditText>
     </TableRow>
@@ -13,7 +17,7 @@
         <TextView android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_horizontal" android:layout_width="fill_parent" android:id="@+id/textView3" android:text="Body:"></TextView>
     </TableRow>
     <TableRow android:layout_height="wrap_content" android:layout_width="fill_parent" android:id="@+id/tableRow6" android:layout_gravity="center_horizontal" android:gravity="center">
-        <LinearLayout android:layout_height="wrap_content" android:id="@+id/linearLayout1" android:layout_width="wrap_content" android:gravity="center|center_horizontal" android:layout_gravity="center|center_horizontal">
+        <LinearLayout android:layout_height="wrap_content" android:id="@+id/linearLayout1" android:layout_width="wrap_content" android:gravity="center|center_horizontal" android:layout_gravity="center|center_horizontal" android:layout_marginTop="5sp" android:layout_marginBottom="5sp">
             <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/btnBold" android:text="B" android:textStyle="bold"></Button>
             <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/btnItalic" android:textStyle="bold|italic" android:text="I "></Button>
             <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/btnUnderline" android:textStyle="bold" android:text="@string/btnUnderline"></Button>
@@ -24,7 +28,7 @@
     </TableRow>
     <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/txtAttachedFile"></TextView>
     <TableRow android:id="@+id/tableRow4" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1">
-        <EditText android:layout_width="fill_parent" android:layout_height="150sp" android:layout_marginRight="10sp" android:layout_marginLeft="10sp" android:gravity="top" android:id="@+id/txtThreadBody"></EditText>
+        <EditText android:layout_width="fill_parent" android:layout_marginRight="10sp" android:layout_marginLeft="10sp" android:gravity="top" android:id="@+id/txtThreadBody" android:layout_height="170sp"></EditText>
     </TableRow>
     <TableRow android:id="@+id/tableRow5" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1">
         <Button android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Submit" android:id="@+id/btnThreadSubmit"></Button>
@@ -32,3 +36,8 @@
     </TableRow>
 
 </LinearLayout>
+    
+    
+    
+    
+    </ScrollView>
