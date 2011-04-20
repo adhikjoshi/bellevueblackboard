@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.bellevue.android.blackboard.BlackboardService;
@@ -229,10 +230,10 @@ public class ThreadActivity extends ListActivity {
                     b.setId(position);
                     if (BlackboardService.isThreadWatched(threads.get(position)))
                     {
-                    	b.setText("Unwatch");
+                    	b.setText("Unwatch This Thread");
                     }else
                     {
-                    	b.setText("Watch");
+                    	b.setText("Watch This Thread");
                     }
                     b.setOnClickListener(new OnClickListener() {
 						
@@ -240,18 +241,22 @@ public class ThreadActivity extends ListActivity {
 							// TODO Auto-generated method stub
 							
 							edu.bellevue.android.blackboard.Thread t = threads.get(v.getId());
-							if (((Button) v).getText().toString().equals("Watch"))
+							if (((Button) v).getText().toString().equals("Watch This Thread"))
 					    	{
 						    	BlackboardService.addThreadToWatch(t);
-						    	((Button)v).setText("Unwatch");
-						    	TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
+						    	((Button)v).setText("Unwatch This Thread");
+						    	RelativeLayout rl = (RelativeLayout) v.getParent();
+						    	TextView tv = ((TextView)rl.findViewById(R.id.toptext));
+						    	//TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
 						    	tv.setTextColor(Color.RED);
 					    	}else
 					    	{
 					    		// unwatch thread
 					    		BlackboardService.removeThreadFromWatch(t);
-					    		((Button)v).setText("Watch");
-					    		TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
+					    		((Button)v).setText("Watch This Thread");
+					    		RelativeLayout rl = (RelativeLayout) v.getParent();
+						    	TextView tv = ((TextView)rl.findViewById(R.id.toptext));
+					    		//TextView tv = ((TextView)getListView().getChildAt(v.getId()).findViewById(R.id.toptext));
 						    	tv.setTextColor(Color.WHITE);
 					    	}
 						}
