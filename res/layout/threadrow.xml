@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TableLayout
-android:id="@+id/widget44"
-android:layout_width="fill_parent"
-android:layout_height="fill_parent"
-xmlns:android="http://schemas.android.com/apk/res/android"
-android:orientation="vertical"
->
 <RelativeLayout
 android:id="@+id/widget50"
 android:layout_width="wrap_content"
@@ -24,21 +17,22 @@ android:textSize="22sp">
 <Button
 android:layout_width="wrap_content"
 android:layout_height="wrap_content"
-android:layout_alignTop="@+id/toptext"
-android:layout_alignParentRight="true"
+android:layout_below="@+id/bottomtext"
+android:layout_alignParentLeft="true"
 android:id="@+id/btnWatch" android:text="Watch">
 </Button>
-</RelativeLayout>
-<TextView
-android:layout_width="wrap_content"
-android:layout_height="wrap_content"
-android:text="TextView" android:id="@+id/middletext">
+<TextView android:layout_height="wrap_content" 
+android:id="@+id/middletext" 
+android:text="TextView" 
+android:layout_width="wrap_content" 
+android:layout_below="@+id/toptext"
+android:layout_alignParentLeft="true">
 </TextView>
 <TextView
 android:id="@+id/bottomtext"
 android:layout_width="wrap_content"
 android:layout_height="wrap_content"
-android:text="TextView"
->
+android:layout_below="@+id/middletext"
+android:text="TextView">
 </TextView>
-</TableLayout>
+</RelativeLayout>
