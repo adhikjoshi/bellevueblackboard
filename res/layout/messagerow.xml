@@ -1,33 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="?android:attr/listPreferredItemHeight"
-    android:padding="6dip">
-
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_width="0dip"
-        android:layout_weight="1"
-        android:layout_height="fill_parent">
-        <TextView
-            android:id="@+id/toptext"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-        android:textSize="22sp"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" 
-            android:id="@+id/middletext"
-            android:ellipsize="marquee"
-        android:singleLine="false"/>
-        <WebView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" 
-            android:id="@+id/bottomtext"
-        android:textSize="16sp"/>
-    </LinearLayout>
-</LinearLayout>
+<TableLayout
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:orientation="vertical" android:id="@+id/layout">
+<RelativeLayout
+android:id="@+id/widget66"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+xmlns:android="http://schemas.android.com/apk/res/android"
+>
+<Button
+android:id="@+id/btnReply"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_alignParentTop="true"
+android:layout_alignParentRight="true"
+android:layout_marginTop="5dip" android:text="Reply">
+</Button>
+<TextView android:layout_width="wrap_content" android:textStyle="bold" android:textSize="22sp" android:text="TextView" android:id="@+id/toptext" android:layout_height="wrap_content" android:layout_alignParentLeft="true" android:singleLine="false"></TextView>
+</RelativeLayout>
+<TextView android:layout_width="wrap_content" android:text="TextView" android:id="@+id/middletext" android:layout_height="wrap_content"></TextView>
+<android.webkit.WebView android:layout_width="fill_parent" android:layout_height="fill_parent" android:id="@+id/bottomtext"></android.webkit.WebView>
+</TableLayout>

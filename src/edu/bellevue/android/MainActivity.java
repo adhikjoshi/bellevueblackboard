@@ -52,7 +52,8 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState){
     	super.onCreate(savedInstanceState);
     	ensureDBExists();
-    	
+
+    	BlackboardService.offlineDemo = true;
         // get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 5 minutes to the calendar object

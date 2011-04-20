@@ -1,5 +1,6 @@
 package edu.bellevue.android;
 
+import edu.bellevue.android.blackboard.BlackboardService;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
@@ -11,6 +12,8 @@ import android.telephony.TelephonyManager;
 public final class ConnChecker {
 		public static boolean shouldConnect(SharedPreferences prefs, Context ctx)
 	    {
+			if (BlackboardService.offlineDemo)
+				return true;
 	    	ConnectivityManager connMan = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
 	    	int netType;
 	    	try

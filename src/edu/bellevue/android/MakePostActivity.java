@@ -9,6 +9,7 @@ import android.os.Message;
 import android.text.Editable;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -24,7 +25,7 @@ public class MakePostActivity extends Activity {
 	private String attachedFile = null;
 	private Handler handler = null;
 	private ProgressDialog pd = null;
-	
+	Bundle extras = null;
 	/** Called when the activity is first created. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -40,10 +41,10 @@ public class MakePostActivity extends Activity {
 	}
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+	    extras = getIntent().getExtras();
 	    setContentView(R.layout.messagemaker);
 	    handler = new MakePostHandler();
-	    
-	    Bundle extras = getIntent().getExtras();
 
 	    method = extras.getString("method");
 	    TextView header = ((TextView)findViewById(R.id.txtHeader));
@@ -67,7 +68,10 @@ public class MakePostActivity extends Activity {
 	    }else if (method.equals("reply"))
 	    {
 	    	header.setText("Create a Reply");
-	    	// finish later
+	    	EditText subject = (EditText)findViewById(R.id.txtThreadSubject);
+	    	subject.setText(extras.getString("defSubject"));
+	    	EditText body = (EditText)findViewById(R.id.txtThreadBody);
+		    body.requestFocus();
 	    }
 
 	}
