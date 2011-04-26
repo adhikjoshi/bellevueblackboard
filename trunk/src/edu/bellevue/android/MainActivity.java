@@ -39,21 +39,10 @@ public class MainActivity extends Activity {
 	
 	
     /** Called when the activity is first created. */
-    @Override
-    public void onDestroy()
-    {
-    	super.onDestroy();
-    	
-    }
-    public void onResume()
-    {
-    	super.onResume();
-    }
     public void onCreate(Bundle savedInstanceState){
     	super.onCreate(savedInstanceState);
     	ensureDBExists();
 
-    	BlackboardService.offlineDemo = true;
         // get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 5 minutes to the calendar object
@@ -70,6 +59,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.btnLogIn).setOnClickListener(new submitListener());
         ctx = getApplicationContext();
         prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        BlackboardService.cacheData = prefs.getBoolean("cachedata", false);
         Editor e = prefs.edit();
         if (prefs.getBoolean("firstRun", true))
         {

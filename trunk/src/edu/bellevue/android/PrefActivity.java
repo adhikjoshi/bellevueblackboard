@@ -1,5 +1,6 @@
 package edu.bellevue.android;
 
+import edu.bellevue.android.blackboard.BlackboardService;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -30,6 +31,10 @@ public class PrefActivity extends PreferenceActivity implements OnSharedPreferen
 				e.putString("password", "");
 				e.commit();
 			}
+		}
+		if (arg1.equals("cachedata"))
+		{
+			BlackboardService.cacheData = arg0.getBoolean(arg1, false);
 		}
 	}
 }

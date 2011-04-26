@@ -18,8 +18,22 @@ android:layout_alignParentTop="true"
 android:layout_alignParentRight="true"
 android:layout_marginTop="5dip" android:text="Reply">
 </Button>
-<TextView android:layout_width="wrap_content" android:textStyle="bold" android:textSize="22sp" android:text="TextView" android:id="@+id/toptext" android:layout_height="wrap_content" android:layout_alignParentLeft="true" android:singleLine="false"></TextView>
+<TextView 
+android:layout_width="wrap_content" 
+android:textStyle="bold"
+android:textSize="22sp" 
+android:text="TextView" 
+android:id="@+id/toptext" 
+android:layout_height="wrap_content" 
+android:layout_alignParentLeft="true" 
+android:layout_toLeftOf="@+id/btnReply"
+android:singleLine="true"></TextView>
 </RelativeLayout>
-<TextView android:layout_width="wrap_content" android:text="TextView" android:id="@+id/middletext" android:layout_height="wrap_content"></TextView>
+<TextView 
+android:layout_width="wrap_content" 
+android:text="TextView" 
+android:id="@+id/middletext" 
+android:layout_height="wrap_content"
+></TextView>
 <android.webkit.WebView android:layout_width="fill_parent" android:layout_height="fill_parent" android:id="@+id/bottomtext"></android.webkit.WebView>
 </TableLayout>
