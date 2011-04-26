@@ -83,9 +83,7 @@ public class BlackboardService {
 	
 	// This stuff is needed for the 'service' part of things
 	// has nothing to do with blackboard really
-	public static boolean offlineDemo = false;
 	static boolean shouldPerformBackgroundCheck = true;
-
 	private static final String LOGTAG = "BB_SERVICE";
 	
 	// URLS USED FOR PARSING
@@ -101,8 +99,9 @@ public class BlackboardService {
 	//variables for Properties
 	private static boolean _loggedIn = false;
 	private static String user_id = null;
-	//private static String password = null;
-	private static boolean cacheData = false;
+	public static boolean cacheData = false;
+	public static boolean offlineDemo = false;
+	
 	// variables used throughout 
 	private static HttpClient client = null;
 	private static HttpClient backclient = null;

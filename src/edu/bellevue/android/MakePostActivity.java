@@ -69,7 +69,7 @@ public class MakePostActivity extends Activity {
 	    {
 	    	header.setText("Create a Reply");
 	    	EditText subject = (EditText)findViewById(R.id.txtThreadSubject);
-	    	subject.setText(extras.getString("defSubject"));
+	    	subject.setText(extras.getString("defSubject").replace("<b>", "").replace("</b>", ""));
 	    	EditText body = (EditText)findViewById(R.id.txtThreadBody);
 		    body.requestFocus();
 	    }

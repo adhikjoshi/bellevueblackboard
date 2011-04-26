@@ -12,14 +12,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -55,15 +52,28 @@ public class ThreadActivity extends ListActivity {
     }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    setContentView(R.layout.listview);
+	    setContentView(R.layout.threadviewlayout);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	    handler = new threadHandler();
 	    
 	    Bundle extras = getIntent().getExtras();
-	    friendlyName = extras.getString("name");
 	    
+	    friendlyName = extras.getString("name");	    
 	    setTitle(friendlyName + " - Threads");
+
+	    ((Button)findViewById(R.id.btnNewThread)).setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
+	    		i.putExtra("method", "newthread");
+	    		Bundle extras = getIntent().getExtras();
+	    		i.putExtra("course_id", extras.getString("course_id"));
+	    		i.putExtra("forum_id", extras.getString("forum_id"));
+	    		i.putExtra("conf_id", extras.getString("conf_id"));    		
+	    		startActivityForResult(i, 0);
+			}
+		});
 	    
 	    pd = ProgressDialog.show(ThreadActivity.this, "Please Wait", "Loading Threads...");
 	    
@@ -130,7 +140,6 @@ public class ThreadActivity extends ListActivity {
 			switch(m.what)
 			{
 			case THREAD_COMPLETE:
-				threads.add(0, null);
 				setListAdapter(new ThreadAdapter(ctx, android.R.layout.simple_list_item_1,threads));
 				break;
 			case CONN_NOT_ALLOWED:
@@ -183,25 +192,6 @@ public class ThreadActivity extends ListActivity {
                 //}
                 v.setId(position);
                 edu.bellevue.android.blackboard.Thread o = items.get(position);
-                if (o == null)
-                {
-                	Button b = new Button(ctx);
-                	b.setText("Create New Thread");
-                	b.setOnClickListener(new OnClickListener() {
-						
-						public void onClick(View v) {
-							// TODO Auto-generated method stub
-							Intent i = new Intent(ThreadActivity.this,MakePostActivity.class);
-				    		i.putExtra("method", "newthread");
-				    		Bundle extras = getIntent().getExtras();
-				    		i.putExtra("course_id", extras.getString("course_id"));
-				    		i.putExtra("forum_id", extras.getString("forum_id"));
-				    		i.putExtra("conf_id", extras.getString("conf_id"));    		
-				    		startActivityForResult(i, 0);
-						}
-					});
-                	return b;
-                }
                 if (o != null) {
                     TextView tt = (TextView) v.findViewById(R.id.toptext);
                     TextView mt = (TextView) v.findViewById(R.id.middletext);
