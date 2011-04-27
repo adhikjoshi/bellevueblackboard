@@ -23,18 +23,26 @@ public class PrefActivity extends PreferenceActivity implements OnSharedPreferen
 	public void onSharedPreferenceChanged(SharedPreferences arg0, String arg1) {
 		if (arg1.equals("autologin"))
 		{
-			Toast.makeText(getApplicationContext(), "Autologin Changed", Toast.LENGTH_LONG).show();
 			if (!arg0.getBoolean("autologin", false))
 			{
 				Editor e = arg0.edit();
-				e.putString("username", "");
-				e.putString("password", "");
+				e.remove("username");
+				e.remove("password");
 				e.commit();
 			}
 		}
 		if (arg1.equals("cachedata"))
 		{
 			BlackboardService.cacheData = arg0.getBoolean(arg1, false);
+			if (BlackboardService.cacheData == true)
+			{
+				if (arg0.getString("cachelength", "").equals(""))
+				{
+					Editor e = arg0.edit();
+					e.putString("cachelength", "1");
+					e.commit();
+				}
+			}
 		}
 	}
 }
