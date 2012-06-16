@@ -94,6 +94,7 @@ public class BlackboardService {
 	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
 	private static final String CS_DISCUSSION_BOARD_URL = "https://www.coursesites.com/webapps/discussionboard/do/conference?toggle_mode=read&action=list_forums&course_id=%s&nav=discussion_board_entry&mode=view";
 	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
+	private static final String CS_THREADS_URL = "https://www.coursesites.com/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list&numResults=9000";
 	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
 	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private static final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
@@ -379,7 +380,7 @@ public class BlackboardService {
 		try
 		{			
 			Log.i("THREADS", String.format(THREADS_URL,forum_id,conf_id,course_id));
-	        httpPost = new HttpPost(String.format(THREADS_URL,forum_id,conf_id,course_id));
+	        httpPost = new HttpPost(String.format(CS_THREADS_URL,forum_id,conf_id,course_id));
 	        httpResponse = client.execute(httpPost);	
 	        
 	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
@@ -391,7 +392,7 @@ public class BlackboardService {
 			{
 				if (((TableTag)n).getAttribute("summary") != null)
 				{
-					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
+					if(((TableTag)n).getAttribute("summary").equals("This is a table showing the attributes of a collection of items."))
 					{
 						forumTable = (TableTag)n;
 						break;
@@ -399,7 +400,7 @@ public class BlackboardService {
 				}
 			}	        
 			org.htmlparser.tags.TableRow[] rows = forumTable.getRows();
-	        for (int x = 2; x < rows.length; x++)
+	        for (int x = 1; x < rows.length; x++)
 			{
 	        	String threadDate;
 				String threadName;
@@ -410,55 +411,42 @@ public class BlackboardService {
 				TableColumn[] cols = rows[x].getColumns();
 
 				//Get Unread Count
-				NodeList lst = cols[6 + (cols.length - 8)].getChildren();
+				//NodeList lst = cols[5 + (cols.length - 8)].getChildren();
+				NodeList lst = cols[5].getChildren();
 				CompositeTag myTag;
 				try
 				{
 					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
 					uCount = myTag.getStringText().trim();
 				}catch (Exception e){
-					
-					uCount = "0";
-					
+					uCount = "0";	
 				}
 				
 				//Get Thread Name
-				lst = cols[3].getChildren();
+				lst = rows[x].getHeaders()[0].getChildren();
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				threadName = myTag.getStringText().trim();
 				
 				//Get Thread Date
 				lst = cols[2].getChildren();
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-				if (!uCount.equals("0"))
-				{
-					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
-				}
 				threadDate = myTag.getStringText().trim();
 				
 				//Get Thread Author
-				lst = cols[4].getChildren();
-				if (uCount.equals("0"))
-				{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-				}else
-				{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
-					myTag = (CompositeTag)myTag.getChildren().extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0];
-				}
+				lst = cols[3].getChildren();
+				
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
 				threadAuthor = myTag.getStringText().trim();
 				
 				//Get Post Count
-				lst = cols[7].getChildren();
-				try{
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[1]);
-				}catch(Exception e){
-					myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
-				}
+				lst = cols[6].getChildren();
+			
+				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter, true).toNodeArray()[0]);
+				
 				pCount = myTag.getStringText().trim();
 				
 				//Get Conf ID and Forum ID
-				lst = cols[3].getChildren();
+				lst = rows[x].getHeaders()[0].getChildren();
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
 				
@@ -482,6 +470,7 @@ public class BlackboardService {
 		shouldPerformBackgroundCheck = true;
 		return threads;
 	}
+	
 	public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id)
 	{
 		return getMessageIds(forum_id,course_id, conf_id, thread_id,client);
