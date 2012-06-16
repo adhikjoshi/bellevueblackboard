@@ -88,8 +88,11 @@ public class BlackboardService {
 	
 	// URLS USED FOR PARSING
 	private static final String LOGIN_URL = "https://cyberactive.bellevue.edu/webapps/login/";
+	private static final String CS_LOGIN_URL = "https://www.coursesites.com/webapps/login/";
 	private static final String COURSES_URL = "https://cyberactive.bellevue.edu/webapps/portal/tab/_2_1/index.jsp";
+	private static final String CS_COURSES_URL = "https://www.coursesites.com/webapps/portal/execute/tabs/tabAction?action=refreshAjaxModule&modId=_4_1&tabId=_1_1&tab_tab_group_id=_1_1";
 	private static final String DISCUSSION_BOARD_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/conference?action=list_forums&course_id=%s&nav=discussion_board_entry";
+	private static final String CS_DISCUSSION_BOARD_URL = "https://www.coursesites.com/webapps/discussionboard/do/conference?toggle_mode=read&action=list_forums&course_id=%s&nav=discussion_board_entry&mode=view";
 	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
 	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
 	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
@@ -156,7 +159,7 @@ public class BlackboardService {
 		Log.i(LOGTAG,"Loggin in with User: " + userName + " and Pass: xxxxx");
 		try{
 
-		httpPost = new HttpPost(LOGIN_URL);
+		httpPost = new HttpPost(CS_LOGIN_URL);
 		List <NameValuePair> nvps = new ArrayList <NameValuePair>();
 		if (client == null){
 			try{
@@ -170,24 +173,24 @@ public class BlackboardService {
 		// and that the password field itself is nulled out.
         nvps.add(new BasicNameValuePair("action", "login"));
         nvps.add(new BasicNameValuePair("user_id",userName));
-        nvps.add(new BasicNameValuePair("encoded_pw",Base64.encodeBytes(password.getBytes(), 0)));
+        //nvps.add(new BasicNameValuePair("encoded_pw",Base64.encodeBytes(password.getBytes(), 0)));
         
         // dont really have a Unicode base64 utility but blackboard seems OK with this
-        nvps.add(new BasicNameValuePair("encoded_pw_unicode",Base64.encodeBytes(password.getBytes(), 0)));
-        nvps.add(new BasicNameValuePair("remote-user", ""));
+        //nvps.add(new BasicNameValuePair("encoded_pw_unicode",Base64.encodeBytes(password.getBytes(), 0)));
+        //nvps.add(new BasicNameValuePair("remote-user", ""));
         nvps.add(new BasicNameValuePair("new_loc", ""));
-        nvps.add(new BasicNameValuePair("auth_type", ""));
-        nvps.add(new BasicNameValuePair("one_time_token", ""));
-        nvps.add(new BasicNameValuePair("pass", ""));
-
+        //nvps.add(new BasicNameValuePair("auth_type", ""));
+        //nvps.add(new BasicNameValuePair("one_time_token", ""));
+        nvps.add(new BasicNameValuePair("password", password));
+        nvps.add(new BasicNameValuePair("login","Login"));
         httpPost.setEntity(new UrlEncodedFormEntity(nvps, HTTP.UTF_8));
 
         // try to log in
         httpResponse = client.execute(httpPost);
         
         // check for "redirected" showing that it succeeded.
-
-        if (convertStreamToString(httpResponse.getEntity().getContent()).contains("redirected"))
+        String s = convertStreamToString(httpResponse.getEntity().getContent());
+        if (s.contains("redirected"))
 		{ 
         	Log.i(LOGTAG, "Login Succeeded!");
 			_loggedIn = true;
@@ -230,13 +233,13 @@ public class BlackboardService {
 		}
 		try
 		{
-	        httpPost = new HttpPost(COURSES_URL);
-	        Log.i(LOGTAG,"Courses URL: " + COURSES_URL);
+	        httpPost = new HttpPost(CS_COURSES_URL);
+	        Log.i(LOGTAG,"Courses URL: " + CS_COURSES_URL);
 	        httpResponse = client.execute(httpPost);
+	        String s = convertStreamToString(httpResponse.getEntity().getContent());
+	        p.setInputHTML(s);
 	
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-	
-			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" \\/webapps.*"));
+			nodeList = p.extractAllNodesThatMatch(new LinkRegexFilter(" /webapps.+"));
 	
 			for (Node n : nodeList.toNodeArray())
 			{
@@ -275,11 +278,11 @@ public class BlackboardService {
 		}
 		try
 		{
-			Log.i(LOGTAG,"Forums URL: " + String.format(DISCUSSION_BOARD_URL,course_id));
-	        httpPost = new HttpPost(String.format(DISCUSSION_BOARD_URL,course_id));
+			Log.i(LOGTAG,"Forums URL: " + String.format(CS_DISCUSSION_BOARD_URL,course_id));
+	        httpPost = new HttpPost(String.format(CS_DISCUSSION_BOARD_URL,course_id));
 	        httpResponse = client.execute(httpPost);	
-	        
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
+	        String s = convertStreamToString(httpResponse.getEntity().getContent());
+	        p.setInputHTML(s);
 	
 			nodeList = p.extractAllNodesThatMatch(tableTagFilter);
 			TableTag forumTable = null;
@@ -287,7 +290,7 @@ public class BlackboardService {
 			{
 				if (((TableTag)n).getAttribute("summary") != null)
 				{
-					if(((TableTag)n).getAttribute("summary").equals("(Data Table)"))
+					if(((TableTag)n).getAttribute("summary").equals("This is a table showing the attributes of a collection of items."))
 					{
 						forumTable = (TableTag)n;
 						break;
@@ -302,11 +305,10 @@ public class BlackboardService {
 				String forumName;
 				String pCount;
 				String uCount;
-				
 				TableColumn[] cols = rows[x].getColumns();
 				
 				//Get Forum Name
-				nodeList = cols[0].getChildren();
+				nodeList = rows[x].getHeaders()[0].getChildren();
 				CompositeTag myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				forumName = myTag.getStringText().trim();
 				
@@ -329,7 +331,7 @@ public class BlackboardService {
 				
 				
 				//Get Conf ID and Forum ID
-				nodeList = cols[0].getChildren();
+				nodeList = rows[x].getHeaders()[0].getChildren();
 				myTag = (CompositeTag)(nodeList.extractAllNodesThatMatch(anchorTagFilter,true).toNodeArray()[0]);
 				String theURL = URLDecoder.decode(((LinkTag)myTag).extractLink());
 				
