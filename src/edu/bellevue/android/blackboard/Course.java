@@ -15,10 +15,7 @@ public class Course implements Serializable{
 		//EC202-T101_2115_1: EC202-T101 Microeconomics (2115-1) 
 		
 		fullName = courseName;
-		friendlyName = courseName.substring(0, courseName.lastIndexOf("(") - 1);
-        friendlyName = friendlyName.substring(friendlyName.lastIndexOf("-"));
-        friendlyName = friendlyName.substring(friendlyName.indexOf(" ")+1);
-        
+        friendlyName = fullName;
 	}
 	
 	public String toString()
