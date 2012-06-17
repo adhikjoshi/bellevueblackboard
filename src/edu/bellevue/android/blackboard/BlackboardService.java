@@ -50,11 +50,15 @@ import org.htmlparser.filters.HasAttributeFilter;
 import org.htmlparser.filters.LinkRegexFilter;
 import org.htmlparser.filters.TagNameFilter;
 import org.htmlparser.tags.CompositeTag;
+import org.htmlparser.tags.DefinitionList;
+import org.htmlparser.tags.DefinitionListBullet;
+import org.htmlparser.tags.Div;
 import org.htmlparser.tags.FormTag;
 import org.htmlparser.tags.InputTag;
 import org.htmlparser.tags.LinkTag;
 import org.htmlparser.tags.ParagraphTag;
 import org.htmlparser.tags.ScriptTag;
+import org.htmlparser.tags.Span;
 import org.htmlparser.tags.TableColumn;
 import org.htmlparser.tags.TableRow;
 import org.htmlparser.tags.TableTag;
@@ -96,6 +100,8 @@ public class BlackboardService {
 	private static final String THREADS_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list";
 	private static final String CS_THREADS_URL = "https://www.coursesites.com/webapps/discussionboard/do/forum?action=list_threads&forum_id=%s&conf_id=%s&course_id=%s&nav=discussion_board_entry&forum_view=list&numResults=9000";
 	private static final String MESSAGES_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/message?action=list_messages&forum_id=%s&course_id=%s&nav=discussion_board_entry&conf_id=%s&message_id=%s";
+	private static final String CS_MESSAGES_URL = "https://www.coursesites.com/webapps/discussionboard/do/message?action=message_tree&course_id=%s&conf_id=%s&forum_id=%s&message_id=%s&nav=discussion_board_entry&nav=discussion_board_entry&thread_id=%s";
+	private static final String CS_MESSAGE_URL = "https://www.coursesites.com/webapps/discussionboard/do/message?action=message_frame&course_id=%s&conf_id=%s&forum_id=%s&nav=db_thread_list_entry&nav=discussion_board_entry&message_id=%s&thread_id=%s";
 	private static final String TREE_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private static final String DISPLAY_URL = "https://cyberactive.bellevue.edu/webapps/discussionboard/do/";
 	private static String displayUrl = null;
@@ -429,14 +435,20 @@ public class BlackboardService {
 				
 				//Get Thread Date
 				lst = cols[2].getChildren();
+				try{
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
 				threadDate = myTag.getStringText().trim();
+				}
+				catch(Exception e){threadDate = "Error Getting Date";}
 				
 				//Get Thread Author
 				lst = cols[3].getChildren();
 				
+				try
+				{
 				myTag = (CompositeTag)(lst.extractAllNodesThatMatch(spanTagFilter,true).toNodeArray()[0]);
 				threadAuthor = myTag.getStringText().trim();
+				}catch(Exception e){threadAuthor = "Error Getting Author";}
 				
 				//Get Post Count
 				lst = cols[6].getChildren();
@@ -475,7 +487,10 @@ public class BlackboardService {
 	{
 		return getMessageIds(forum_id,course_id, conf_id, thread_id,client);
 	}
-	public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id, HttpClient client)
+	
+	
+	
+	/*public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id, HttpClient client)
 	{
 		shouldPerformBackgroundCheck = false;
 		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
@@ -626,7 +641,132 @@ public class BlackboardService {
 			shouldPerformBackgroundCheck = true;
 			return m;
 		}catch(Exception e){return null;}
+	} */
+
+	public static Hashtable<String, String> getMessageIds(String forum_id,
+			String course_id, String conf_id, String thread_id,
+			HttpClient client) {
+		shouldPerformBackgroundCheck = false;
+		Hashtable<String, String> msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
+		if (offlineDemo) {
+			msgIds.put("1", "1");
+			msgIds.put("2", "2");
+			msgIds.put("3", "3");
+			msgIds.put("4", "4");
+			msgIds.put("5", "5");
+			return msgIds;
+		}
+		// load site that contains all replies, use this to get the IDs we need
+		// to get the details.
+		try {
+			// we need to get the URL for the message tree.
+			// course , conf, forum, message, thread
+			//private static final String CS_MESSAGES_URL = "https://www.coursesites.com/webapps/discussionboard/do/message?action=message_tree&course_id=%s&conf_id=%s&forum_id=%s&message_id=%s&nav=discussion_board_entry&nav=discussion_board_entry&thread_id=%s";
+			String str = String.format(CS_MESSAGES_URL, course_id, conf_id,
+					forum_id, thread_id, thread_id);
+			httpPost = new HttpPost(str);
+			httpResponse = client.execute(httpPost);
+
+			p = new Parser();
+			String s = convertStreamToString(httpResponse.getEntity().getContent());
+			p.setInputHTML(s);
+			// WriteEntityToFile(forumsResponse.getEntity(),
+			// "MessagesOut.html");
+			
+			nodeList = p.extractAllNodesThatMatch(anchorTagFilter);
+			
+			for (Node n : nodeList.toNodeArray())
+			{
+				String curHref = ((LinkTag)n).getAttribute("href");
+				if (curHref.contains("javascript:display"))
+				{
+					curHref = curHref.replace("javascript:display(", "");
+					curHref = curHref.replace("'", "");
+					curHref = curHref.replace(")","");
+					String[] values = curHref.split(",");
+					msgIds.put(values[1],values[0]);
+				}
+			}
+		}catch(Exception e){}
+		shouldPerformBackgroundCheck = true;
+		return msgIds;
 	}
+
+	public static Message getMessage(String course_id, String forum_id,
+			String conf_id, String thread_id, String message_id) {
+
+		shouldPerformBackgroundCheck = false;
+		Message m = null;
+		if (offlineDemo) {
+			m = new Message(
+					"Message " + thread_id,
+					"01/" + thread_id + "/01",
+					"DemoUser",
+					"Demo Body<br><a href='https://cyberactive.bellevue.edu/courses/foo'>DemoLink</a>",
+					"0", "0", "0", "0", "0");
+			return m;
+		}
+		try {
+			TableTag t;
+			TableRow[] rows;
+			// course conf forum message thread
+			String msgUrl = String.format(CS_MESSAGE_URL, course_id,conf_id,forum_id,message_id,thread_id);
+
+			httpPost = new HttpPost(msgUrl);
+			httpResponse = client.execute(httpPost);
+
+			p = new Parser();
+			String s = convertStreamToString(httpResponse.getEntity().getContent());
+			p.setInputHTML(s);
+			String author = "";
+			nodeList = p.extractAllNodesThatMatch(new TagNameFilter("dl"));
+			DefinitionList dl = (DefinitionList) nodeList.toNodeArray()[0];
+			try
+			{
+				Node anchor = dl.getChildren().extractAllNodesThatMatch(anchorTagFilter, true).toNodeArray()[0];
+				author = anchor.toPlainTextString();	
+			}
+			catch(Exception e){
+				NodeList nl = dl.getChildren().extractAllNodesThatMatch(new TagNameFilter("dd"),true);
+				author = ((DefinitionListBullet) nl.elementAt(0)).getStringText().trim();
+			}
+			
+			int i = 0;
+			nodeList = dl.getChildren().extractAllNodesThatMatch(new TagNameFilter("dd"),true);
+			String postedDate = nodeList.elementAt(1).getFirstChild().getText().trim();
+			p.setInputHTML(s);
+			nodeList = p.parse(new TagNameFilter("div")).extractAllNodesThatMatch(new HasAttributeFilter("class", "navButtons"),true);
+			nodeList = nodeList.toNodeArray()[0].getChildren();
+			String subject = ((Span) nodeList.elementAt(3)).getStringText();
+			
+			// get actual message
+			String bodyinfo = "";
+			try
+			{
+			p.setInputHTML(s);
+			nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("class", "vtbegenerated"),true);
+			bodyinfo  = ((Div)(nodeList.toNodeArray()[0])).getStringText();
+			bodyinfo = "<h5>Body:</h5>" + bodyinfo;
+			}
+			catch (Exception e)
+			{
+				bodyinfo = "<h5>Body:</h5>" + "{blank}";
+			}
+			postedDate = "<i>" + postedDate + "</i>";
+			m = new Message(subject, postedDate, author, bodyinfo, course_id,
+					conf_id, forum_id, message_id, thread_id);
+
+			if (cacheData) {
+				// storeMessage(m);
+			}
+			shouldPerformBackgroundCheck = true;
+			return m;
+		} catch (Exception e) {
+			e = null;
+			return null; 
+		}
+	}
+
 	public static void addThreadToWatch(Thread t)
 	{
 		storeThread(t);
