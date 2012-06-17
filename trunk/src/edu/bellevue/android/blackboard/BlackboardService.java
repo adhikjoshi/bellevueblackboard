@@ -78,7 +78,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import edu.bellevue.android.MessageActivity;
 import edu.bellevue.android.R;
-
+import com.google.android.apps.analytics.*;
 /**
  * @author TJ
  *
@@ -124,11 +124,18 @@ public class BlackboardService {
 	private static TagNameFilter tableTagFilter = new TagNameFilter("table");
 	private static TagNameFilter anchorTagFilter = new TagNameFilter("a");
 	private static TagNameFilter spanTagFilter = new TagNameFilter("span");
-	private static TagNameFilter scriptTagFilter = new TagNameFilter("script");
-
+    private static GoogleAnalyticsTracker tracker = GoogleAnalyticsTracker.getInstance();
+    private static Context currentContext = null;
+    
+    public static void setContext(Context ctx)
+    {
+    	currentContext = ctx;
+    }
+    
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public static boolean logIn(String userName, String password)
 	{
+		
 		if (userName.equals("demo") && password.equals("demo"))
 		{
 			user_id="demo";
@@ -216,6 +223,9 @@ public class BlackboardService {
 			_loggedIn = false;
 		}
 		shouldPerformBackgroundCheck = true;
+		
+		tracker.trackEvent("BlackboardService", "LogIn", "LogIn", _loggedIn == true ? 1 : 0 );
+		
 		return _loggedIn;
 	}
 	public static boolean isLoggedIn()
@@ -265,6 +275,7 @@ public class BlackboardService {
 			System.gc();
 		}
 		shouldPerformBackgroundCheck = true;
+		tracker.trackEvent("BlackboardService", "GetCourses", "GetCourses", courses.size());
 		return courses;
 	}
 	public static List<Forum> getForums(String course_id)
@@ -355,6 +366,7 @@ public class BlackboardService {
 			}			
 		}catch(Exception e){e.printStackTrace(); forums = null;}
 		shouldPerformBackgroundCheck = true;
+		tracker.trackEvent("BlackboardService", "GetForums", "GetForums", forums.size());
 		return forums;
 		
 	}
@@ -480,6 +492,7 @@ public class BlackboardService {
 	        
 		}catch(Exception e){e.printStackTrace();}
 		shouldPerformBackgroundCheck = true;
+		tracker.trackEvent("BlackboardService", "GetThreads", "GetThreads", threads.size());
 		return threads;
 	}
 	
@@ -488,161 +501,6 @@ public class BlackboardService {
 		return getMessageIds(forum_id,course_id, conf_id, thread_id,client);
 	}
 	
-	
-	
-	/*public static Hashtable<String,String> getMessageIds(String forum_id, String course_id, String conf_id, String thread_id, HttpClient client)
-	{
-		shouldPerformBackgroundCheck = false;
-		Hashtable<String, String>msgIds = new Hashtable<String, String>(); // MessageID,ThreadID
-		if (offlineDemo)
-		{
-			msgIds.put("1", "1");
-			msgIds.put("2", "2");
-			msgIds.put("3", "3");
-			msgIds.put("4", "4");
-			msgIds.put("5", "5");
-			return msgIds;
-		}
-		//load site that contains all replies, use this to get the IDs we need to get the details.
-		try
-		{
-			// we need to get the URL for the message tree.
-			String str = String.format(MESSAGES_URL,forum_id,course_id,conf_id,thread_id);
-	        httpPost = new HttpPost(str);
-	        httpResponse = client.execute(httpPost);	
-	        
-	        p = new Parser();	        
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-	        //WriteEntityToFile(forumsResponse.getEntity(), "MessagesOut.html");
-	        nodeList = p.parse(scriptTagFilter);
-	        String treeUrl= null;
-	        //String displayUrl = null;
-	        for (Node t:nodeList.toNodeArray())
-	        {
-	        	String scriptCode = ((ScriptTag)t).getScriptCode();
-	        	if (scriptCode.contains("treeUrl"))
-	        	{
-	        		treeUrl = scriptCode.substring(scriptCode.indexOf("treeUrl = ")+11);
-	        		treeUrl = treeUrl.substring(0,treeUrl.indexOf(";")-1);
-	        		treeUrl = TREE_URL + treeUrl;
-	        		
-	        		displayUrl = scriptCode.substring(scriptCode.indexOf("displayUrl = ")+14);
-	        		displayUrl = displayUrl.substring(0,displayUrl.indexOf(";")-1);
-	        		displayUrl = DISPLAY_URL + displayUrl;
-	        		break;
-	        	}
-	        }
-	        
-	        // now we need to get the form that contains all the messages:
-	        httpPost = new HttpPost(treeUrl);
-	        httpResponse = client.execute(httpPost);	
-	        
-	        p = new Parser();	        
-	        p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-	        
-			nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
-			nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
-			TableTag t = (TableTag)(nodeList.elementAt(0));
-			TableRow[] rows = t.getRows();
-			for (TableRow r : rows)
-			{
-				TableColumn[] cols = r.getColumns();
-				TableColumn correctCol = cols[3];
-				nodeList = correctCol.getChildren().extractAllNodesThatMatch(anchorTagFilter,true);
-				String href = ((LinkTag)(nodeList.elementAt(1))).extractLink();
-				href = href.substring(href.indexOf("(") + 1);
-				href = href.substring(0,href.lastIndexOf(","));
-				href = href.replace("'","");
-				msgIds.put(href.substring(href.indexOf(",")+1),href.substring(0,href.indexOf(",")));
-			}
-		}catch(Exception e){}
-		shouldPerformBackgroundCheck = true;
-		return msgIds;
-	}
-	public static Message getMessage(String course_id, String forum_id, String conf_id, String thread_id, String message_id)
-	{
-		
-		shouldPerformBackgroundCheck = false;
-		Message m = null;
-		if (offlineDemo)
-		{
-			m = new Message("Message "+thread_id,"01/"+thread_id+"/01","DemoUser","Demo Body<br><a href='https://cyberactive.bellevue.edu/courses/foo'>DemoLink</a>","0","0","0","0","0");
-			return m;
-		}
-		m = getMsgFromDb(course_id, message_id, thread_id);
-		if (m != null)
-		{
-			return m;
-		}
-		try{
-			TableTag t;
-			TableRow[] rows;
-	
-			String msgUrl = displayUrl + "&message_id="+message_id+"&thread_id="+thread_id;
-	
-			httpPost = new HttpPost(msgUrl);
-			httpResponse = client.execute(httpPost);
-			
-			p = new Parser();
-			p.setInputHTML(convertStreamToString(httpResponse.getEntity().getContent()));
-			
-			nodeList = p.parse(null).extractAllNodesThatMatch(new HasAttributeFilter("name", "messageForm"),true);
-			nodeList =((FormTag)nodeList.elementAt(0)).getChildren().extractAllNodesThatMatch(tableTagFilter);
-			
-			t = (TableTag)(nodeList.elementAt(0));
-			rows = t.getRows();
-			Log.i("foo",msgUrl);
-			
-			// ROW 0 -> Subject Line.
-			TableColumn[] cols = rows[0].getColumns();
-			String subject = cols[0].getStringText().trim().replace("<strong>","").replace("</strong>", "");
-			subject = subject.replace("Subject: ", "");
-			subject = subject.replace("&nbsp;","");
-			subject = "<b>" + subject + "</b>";
-			// Get Author
-			cols = rows[1].getColumns();
-			String author = null;
-			try{
-				author =  ((LinkTag)((cols[0].getChildren().extractAllNodesThatMatch(anchorTagFilter,true)).elementAt(0))).getStringText();
-			}catch (Exception e)
-			{
-				String selfAuthor = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
-				selfAuthor = selfAuthor.substring(selfAuthor.indexOf("Author:") + 7);
-				selfAuthor = selfAuthor.substring(0,selfAuthor.indexOf("<br>"));
-				selfAuthor = selfAuthor.replace("\"", "");
-				author = selfAuthor.replace("</strong>", "").trim();
-			}
-			
-			// Get Posted Date
-			String postedDate = ((ParagraphTag)((cols[0].getChildren().extractAllNodesThatMatch(new TagNameFilter("p"),true)).elementAt(0))).getStringText();
-			postedDate = postedDate.substring(postedDate.indexOf("Posted date:") + 12);
-			postedDate = postedDate.substring(0,postedDate.indexOf("<br>"));
-			postedDate = postedDate.replace("</strong>", "").trim();
-			
-			// get actual message
-			nodeList = t.getChildren().extractAllNodesThatMatch(tableTagFilter, true);
-			t = (TableTag)nodeList.elementAt(1);
-			String bodyinfo = null;
-			if (thread_id.equals(message_id))
-			{
-				bodyinfo = t.getRow(0).getColumns()[0].getStringText();
-			}else
-			{
-				bodyinfo = t.getRow(1).getColumns()[0].getStringText();
-			}
-			bodyinfo = "<h5>Body:</h5>"+bodyinfo;
-			postedDate = "<i>" + postedDate + "</i>";
-			m = new Message(subject, postedDate, author, bodyinfo, course_id, conf_id, forum_id, message_id, thread_id);
-			
-			if (cacheData)
-			{
-				storeMessage(m);
-			}
-			shouldPerformBackgroundCheck = true;
-			return m;
-		}catch(Exception e){return null;}
-	} */
-
 	public static Hashtable<String, String> getMessageIds(String forum_id,
 			String course_id, String conf_id, String thread_id,
 			HttpClient client) {
@@ -760,9 +618,10 @@ public class BlackboardService {
 				// storeMessage(m);
 			}
 			shouldPerformBackgroundCheck = true;
+			tracker.trackEvent("BlackboardService", "GetMessage", "GetMessage", 1);
 			return m;
 		} catch (Exception e) {
-			e = null;
+			tracker.trackEvent("BlackboardService", "GetMessage", "GetMessage", 0);
 			return null; 
 		}
 	}
@@ -770,9 +629,11 @@ public class BlackboardService {
 	public static void addThreadToWatch(Thread t)
 	{
 		storeThread(t);
+		tracker.trackEvent("BlackboardService", "WatchThread", "AddToWatch", 1);
 	}
 	public static void removeThreadFromWatch(Thread t)
 	{
+		tracker.trackEvent("BlackboardService", "WatchThread", "RemoveFromWatch", 1);
 		removeThread(t);
 	}
 	public static boolean createNewThread(String course_id, String forum_id, String conf_id, String subject, String body, String attachedFile)

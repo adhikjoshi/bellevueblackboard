@@ -2,6 +2,8 @@ package edu.bellevue.android;
 
 import java.util.List;
 
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -41,6 +43,7 @@ public class ForumActivity extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    GoogleAnalyticsTracker.getInstance().trackPageView("/ForumActivity");
 	    setContentView(R.layout.listview);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);

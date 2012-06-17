@@ -13,6 +13,7 @@
 	<classpathentry exported="true" kind="lib" path="externalLibs/sitecapturer.jar"/>
 	<classpathentry exported="true" kind="lib" path="externalLibs/thumbelina.jar"/>
 	<classpathentry exported="true" kind="lib" path="externalLibs/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/libGoogleAnalytics.jar"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
