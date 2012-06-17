@@ -2,6 +2,8 @@ package edu.bellevue.android;
 
 import java.util.List;
 
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -32,11 +34,11 @@ public class CourseActivity extends ListActivity {
 	private ProgressDialog pd;
 	protected BlackboardService mBoundService;
 
-
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    GoogleAnalyticsTracker.getInstance().trackPageView("/CourseActivity");
 	    setContentView(R.layout.listview);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);

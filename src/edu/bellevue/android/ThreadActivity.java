@@ -2,6 +2,8 @@ package edu.bellevue.android;
 
 import java.util.List;
 
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -52,6 +54,7 @@ public class ThreadActivity extends ListActivity {
     }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    GoogleAnalyticsTracker.getInstance().trackPageView("/ThreadActivity");
 	    setContentView(R.layout.threadviewlayout);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);

@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Calendar;
 
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -36,11 +38,16 @@ public class MainActivity extends Activity {
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
-	
+	private GoogleAnalyticsTracker tracker = GoogleAnalyticsTracker.getInstance();
 	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState){
     	super.onCreate(savedInstanceState);
+    	BlackboardService.setContext(getApplicationContext());
+		tracker.startNewSession("UA-32710526-1",this);
+		tracker.setAnonymizeIp(true);
+		
+    	tracker.trackPageView("/LoginPage");
     	ensureDBExists();
 
         // get a Calendar object with current time
