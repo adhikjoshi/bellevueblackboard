@@ -1,12 +1,11 @@
 package edu.bellevue.android;
 
-import edu.bellevue.android.blackboard.BlackboardService;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
-import android.widget.Toast;
+import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public class PrefActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener{
 

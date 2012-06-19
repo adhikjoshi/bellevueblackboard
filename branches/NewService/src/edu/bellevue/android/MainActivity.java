@@ -5,8 +5,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Calendar;
 
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -27,7 +25,11 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
-import edu.bellevue.android.blackboard.BlackboardService;
+
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
+import edu.bellevue.android.blackboard.objects.BlackboardService;
+import edu.bellevue.android.blackboard.objects.CourseSites91Adapter;
 
 public class MainActivity extends Activity {
 	
@@ -43,7 +45,9 @@ public class MainActivity extends Activity {
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState){
     	super.onCreate(savedInstanceState);
-    	BlackboardService.setContext(getApplicationContext());
+    	CourseSites91Adapter adapter = new CourseSites91Adapter();
+    	adapter.initializeAdapter();
+    	BlackboardService.setBlackboardAdapter(adapter);
 		tracker.startNewSession("UA-32710526-1",this);
 		tracker.setAnonymizeIp(true);
 		

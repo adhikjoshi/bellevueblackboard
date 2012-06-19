@@ -6,8 +6,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -18,14 +16,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.Html;
-import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -33,8 +28,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.bellevue.android.blackboard.BlackboardService;
+
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import edu.bellevue.android.blackboard.MessageComparator;
+import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public class MessageActivity extends ListActivity {
 

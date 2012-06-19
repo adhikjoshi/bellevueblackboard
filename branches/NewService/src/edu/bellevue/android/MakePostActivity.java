@@ -18,7 +18,7 @@ import android.widget.Toast;
 import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 import com.h3r3t1c.filechooser.FileChooser;
 
-import edu.bellevue.android.blackboard.BlackboardService;
+import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public class MakePostActivity extends Activity {
 

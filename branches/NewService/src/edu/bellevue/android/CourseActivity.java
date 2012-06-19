@@ -2,8 +2,6 @@ package edu.bellevue.android;
 
 import java.util.List;
 
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -19,8 +17,11 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
-import edu.bellevue.android.blackboard.BlackboardService;
+
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
+
 import edu.bellevue.android.blackboard.Course;
+import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public class CourseActivity extends ListActivity {
 
