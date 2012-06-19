@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+android:id="@+id/widget50"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+xmlns:android="http://schemas.android.com/apk/res/android"
+>
+<TextView
+android:id="@+id/toptext"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="TextView"
+android:layout_alignParentTop="true"
+android:layout_alignParentLeft="true"
+android:textSize="22sp" android:singleLine="true">
+</TextView>
+<Button
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_below="@+id/bottomtext"
+android:layout_alignParentLeft="true"
+android:id="@+id/btnWatch" android:text="Watch">
+</Button>
+<TextView android:layout_height="wrap_content" 
+android:id="@+id/middletext" 
+android:text="TextView" 
+android:layout_width="wrap_content" 
+android:layout_below="@+id/toptext"
+android:layout_alignParentLeft="true" android:singleLine="true">
+</TextView>
+<TextView
+android:id="@+id/bottomtext"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_below="@+id/middletext"
+android:text="TextView" android:singleLine="true">
+</TextView>
+</RelativeLayout>

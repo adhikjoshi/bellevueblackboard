@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="gen"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/apache-mime4j-0.6.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/filterbuilder.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/htmllexer.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/htmlparser.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/httpclient-4.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/httpcore-4.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/httpmime-4.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/sitecapturer.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/thumbelina.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/libGoogleAnalytics.jar"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="output" path="bin/classes"/>
+</classpath>

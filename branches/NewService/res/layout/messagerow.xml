@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:orientation="vertical" android:id="@+id/layout">
+<RelativeLayout
+android:id="@+id/widget66"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+xmlns:android="http://schemas.android.com/apk/res/android"
+>
+<Button
+android:id="@+id/btnReply"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_alignParentTop="true"
+android:layout_alignParentRight="true"
+android:layout_marginTop="5dip" android:text="Reply">
+</Button>
+<TextView 
+android:layout_width="wrap_content" 
+android:textStyle="bold"
+android:textSize="22sp" 
+android:text="TextView" 
+android:id="@+id/toptext" 
+android:layout_height="wrap_content" 
+android:layout_alignParentLeft="true" 
+android:layout_toLeftOf="@+id/btnReply"
+android:singleLine="true"></TextView>
+</RelativeLayout>
+<TextView 
+android:layout_width="wrap_content" 
+android:text="TextView" 
+android:id="@+id/middletext" 
+android:layout_height="wrap_content"
+></TextView>
+<android.webkit.WebView android:layout_width="fill_parent" android:layout_height="fill_parent" android:id="@+id/bottomtext"></android.webkit.WebView>
+</TableLayout>
