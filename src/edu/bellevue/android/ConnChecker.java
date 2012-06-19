@@ -1,6 +1,5 @@
 package edu.bellevue.android;
 
-import edu.bellevue.android.blackboard.BlackboardService;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
@@ -8,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.telephony.TelephonyManager;
+import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public final class ConnChecker {
 		public static boolean shouldConnect(SharedPreferences prefs, Context ctx)
