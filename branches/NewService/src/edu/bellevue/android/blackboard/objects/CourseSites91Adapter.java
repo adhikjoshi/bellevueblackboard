@@ -59,12 +59,13 @@ public class CourseSites91Adapter implements BlackboardAdapter {
 	public boolean logIn(String userName, String password) {
 		// TODO Auto-generated method stub
 		Hashtable<String, String> params = new Hashtable<String, String>();
+		cookies = new Hashtable<String, String>();
 		params.put("action", "login");
 		params.put("user_id", userName);
 		params.put("new_loc", "");
 		params.put("password", password);
 		params.put("login", "Login");
-
+		
 		String result = executePost(LOGIN_URL, params);
 		_loggedIn = result.contains("redirected");
 
@@ -268,11 +269,16 @@ public class CourseSites91Adapter implements BlackboardAdapter {
 
 	private String executePost(String url, Hashtable<String, String> params) {
 		// TODO Auto-generated method stub
+		//url = "https://requestb.in/r0uku0r0";
 		StringBuffer response = new StringBuffer();
 
 		try {
 			HttpsURLConnection conn = createHttpsUrlConnection(url);
-			conn.setRequestMethod("POST");
+			if (params != null)
+				conn.setRequestMethod("POST");
+			else
+				conn.setRequestMethod("GET");
+			
 			conn.setUseCaches(false);
 			conn.setDoInput(true);
 			conn.setDoOutput(true);
@@ -299,8 +305,13 @@ public class CourseSites91Adapter implements BlackboardAdapter {
 				response.append(line);
 				response.append('\r');
 			}
+			int returnCode = conn.getResponseCode();
+			if (conn.getErrorStream() != null)
+			{
+			int errStreamLen = conn.getErrorStream().available();
+			errStreamLen++;
+			}
 			rd.close();
-
 			setCookies(conn);
 			conn.disconnect();
 			return response.toString();
@@ -407,8 +418,8 @@ public class CourseSites91Adapter implements BlackboardAdapter {
 		}
 		if (sb.length() > 0)
 		{
-			sb = sb.delete(sb.length()-2, sb.length()-1);
-			return sb.toString();
+			sb.deleteCharAt(sb.lastIndexOf(";"));
+			return sb.toString().trim();
 		}
 		else
 		{

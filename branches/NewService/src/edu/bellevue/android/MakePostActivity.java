@@ -15,7 +15,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 import com.h3r3t1c.filechooser.FileChooser;
 
 import edu.bellevue.android.blackboard.objects.BlackboardService;
@@ -42,7 +41,6 @@ public class MakePostActivity extends Activity {
 	}
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    GoogleAnalyticsTracker.getInstance().trackPageView("MakePostActivity");
 	    this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 	    extras = getIntent().getExtras();
 	    setContentView(R.layout.messagemaker);

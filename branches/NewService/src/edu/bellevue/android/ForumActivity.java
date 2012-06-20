@@ -20,9 +20,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import edu.bellevue.android.blackboard.Forum;
 import edu.bellevue.android.blackboard.objects.BlackboardService;
 
@@ -44,7 +41,6 @@ public class ForumActivity extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    GoogleAnalyticsTracker.getInstance().trackPageView("/ForumActivity");
 	    setContentView(R.layout.listview);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);

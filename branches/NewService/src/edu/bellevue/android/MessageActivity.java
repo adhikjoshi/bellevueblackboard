@@ -28,9 +28,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import edu.bellevue.android.blackboard.MessageComparator;
 import edu.bellevue.android.blackboard.objects.BlackboardService;
 
@@ -69,7 +66,6 @@ public class MessageActivity extends ListActivity {
     }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    GoogleAnalyticsTracker.getInstance().trackPageView("/MessageActivity");
 	    setContentView(R.layout.listview);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);

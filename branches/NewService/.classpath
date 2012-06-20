@@ -4,7 +4,7 @@
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry exported="true" kind="lib" path="externalLibs/libGoogleAnalytics.jar"/>
 	<classpathentry exported="true" kind="lib" path="externalLibs/jsoup-1.6.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="externalLibs/MPMetrics_v1.3.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
