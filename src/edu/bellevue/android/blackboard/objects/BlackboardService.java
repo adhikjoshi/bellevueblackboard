@@ -4,6 +4,13 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.content.Context;
+
+import com.mixpanel.android.mpmetrics.MPMetrics;
+
 import edu.bellevue.android.blackboard.Course;
 import edu.bellevue.android.blackboard.Forum;
 import edu.bellevue.android.blackboard.Message;
@@ -13,14 +20,31 @@ public class BlackboardService {
 
 	static boolean shouldPerformBackgroundCheck = true;
 	private static final String LOGTAG = "BB_SERVICE";
-
+	private static final String SERVICE_VERSION = "2.0_Android";
+	private static Context ctx = null;
+	public static MPMetrics tracker = null;
+	
 	// variables for Properties
 	private static String user_id = null;
+	
 	public static boolean cacheData = false;
 	public static boolean offlineDemo = false;
 	
 	public static BlackboardAdapter adapter = null;
 	
+	
+	public static void setCurrentContext(Context context)
+	{
+		tracker = MPMetrics.getInstance(context, "ccdae68ec0a76e64b2ded490c7d74ec4");
+		try
+		{
+			JSONObject jo = new JSONObject();
+			jo.put("AppVersion", SERVICE_VERSION);
+			tracker.registerSuperProperties(jo);
+		}catch(Exception e){e.printStackTrace();}
+		
+		
+	}
 
 	// PUBLIC METHODS USED TO PERFORM BLACKBOARD OPERATIONS
 	public static void setBlackboardAdapter(BlackboardAdapter ba)
@@ -32,12 +56,22 @@ public class BlackboardService {
 	}
 	
 	public static boolean logIn(String userName, String password) {
-		if (adapter.logIn(userName,password))
+		
+		boolean result = adapter.logIn(userName,password);
+		if (result)
 		{
 			user_id = userName;
-			return true;
 		}
-		return false;
+		JSONObject jo = new JSONObject();
+		try {
+			jo.put("mp_name_tag", userName);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		tracker.track("LogIn", jo);
+		tracker.flush();
+		return result;
 	}
 	public static boolean isLoggedIn() {
 		return adapter.isLoggedIn();
@@ -46,6 +80,7 @@ public class BlackboardService {
 		shouldPerformBackgroundCheck = false;
 		List<Course> courses = new ArrayList<Course>();
 		courses = adapter.getCourses();
+		tracker.track("GetCourses", null);
 		shouldPerformBackgroundCheck = true;
 		return courses;
 	}
@@ -54,7 +89,7 @@ public class BlackboardService {
 		List<Forum> forums = new ArrayList<Forum>();
 		
 		forums = adapter.getForums(course_id);
-		
+		tracker.track("GetForums", null);
 		shouldPerformBackgroundCheck = true;
 		return forums;
 
@@ -65,7 +100,7 @@ public class BlackboardService {
 		shouldPerformBackgroundCheck = false;
 		
 		threads = adapter.getThreads(course_id, forum_id, conf_id);
-		
+		tracker.track("GetThreads", null);
 		shouldPerformBackgroundCheck = true;
 		return threads;
 	}

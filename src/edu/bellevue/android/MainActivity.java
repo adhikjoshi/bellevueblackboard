@@ -25,9 +25,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
-
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import edu.bellevue.android.blackboard.objects.BlackboardService;
 import edu.bellevue.android.blackboard.objects.CourseSites91Adapter;
 
@@ -40,7 +37,6 @@ public class MainActivity extends Activity {
 	private ProgressDialog pd;
 	private Context ctx;
 	private SharedPreferences prefs;
-	private GoogleAnalyticsTracker tracker = GoogleAnalyticsTracker.getInstance();
 	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState){
@@ -48,10 +44,7 @@ public class MainActivity extends Activity {
     	CourseSites91Adapter adapter = new CourseSites91Adapter();
     	adapter.initializeAdapter();
     	BlackboardService.setBlackboardAdapter(adapter);
-		tracker.startNewSession("UA-32710526-1",this);
-		tracker.setAnonymizeIp(true);
-		
-    	tracker.trackPageView("/LoginPage");
+    	BlackboardService.setCurrentContext(getApplicationContext());
     	ensureDBExists();
 
         // get a Calendar object with current time

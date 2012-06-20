@@ -24,9 +24,6 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
-
 import edu.bellevue.android.blackboard.objects.BlackboardService;
 
 public class ThreadActivity extends ListActivity {
@@ -55,7 +52,6 @@ public class ThreadActivity extends ListActivity {
     }
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    GoogleAnalyticsTracker.getInstance().trackPageView("/ThreadActivity");
 	    setContentView(R.layout.threadviewlayout);
 	    ctx = this.getApplicationContext();
 	    prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
